@@ -208,6 +208,8 @@ public:
 
     void pushByteToStack(byte value);
 
+    long getCurrentTime();
+
     byte pop();
 
     // Instruction helper variables
@@ -231,6 +233,13 @@ public:
     int printCount = 0;
     int pc2 = 0;
 
+    int cycleCount;
+
+    const int CPU_FREQUENCY = 1790000; // For NES, 1.79 MHz
+    bool pageCrossed;
+
+    uint16_t temppc;
+    
 };
 
 cpu::cpu() {
