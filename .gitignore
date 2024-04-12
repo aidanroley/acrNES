@@ -11,7 +11,7 @@
 *.sln.docstates
 nesss.vcxproj.filters
 nesss.vcxproj
-nesss.sln
+NESemu.sln
 .gitattributes
 
 # User-specific files (MonoDevelop/Xamarin Studio)
