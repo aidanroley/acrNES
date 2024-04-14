@@ -10,7 +10,7 @@
 #include <chrono>
 #include <thread>
 
-int main() {
+int mainCPU() {
     cpu myCpu;
     myCpu.run(); // Start the CPU emulation
     return 0; // Return success
@@ -24,9 +24,14 @@ void cpu::run() {
         while (cycleCount < 1790000 / 60) { // 1790000 / 60
             byte opcode = fetch();
             printCount++;
-            if (printCount % 5000 == 0) {
-            std::cout << "Opcode: 0x" << std::hex << static_cast<int>(opcode) << " " << std::dec << printCount << std::endl;
+           
+            
+            if (printCount % 10000 == 0) {
+                std::cout << "Opcode: 0x" << std::hex << static_cast<int>(opcode) << " " << std::dec << printCount << std::endl;
+                std::cout << "Cycle: "<< std::dec << cycleCount << std::endl;
             }
+            
+
             // Converts hexadecimal to string for readability
             std::stringstream ss;
             ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(opcode);
@@ -45,7 +50,7 @@ void cpu::run() {
         }
         long endTime = getCurrentTime();
         long elapsedTime = endTime - startTime;
-        long expectedTime = 1000000 / 60;
+        long expectedTime = 1790000 / 60; // 1000000
         if (elapsedTime < expectedTime) {
             std::this_thread::sleep_for(std::chrono::microseconds(expectedTime - elapsedTime)); // Delay to sync with real-time
         }
