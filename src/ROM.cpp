@@ -3,17 +3,18 @@
 byte output;  
 
 int main() {
-	
-	int val = parseFile();
+	ROM rom;
+	int val = rom.parseFile();
 	
 }
 
-int parseFile() {
+int ROM::parseFile() {
 	NESHeader header;
-	iNES = false;
-	NES2 = false;
+	header.iNES = false;
+	header.NES2 = false;
 	std::vector<byte> byteArray;
-	const char* filename = "C:\\Users\\Aidan\\Downloads\\Super Mario Bros (E)\\Super Mario Bros (E).nes";
+	// const char* filename = "C:\\Users\\bridg\\Downloads\\Super Mario Bros (E)\\Super Mario Bros (E).nes";
+	const char* filename = "C:\\Users\\bridg\\Downloads\\nestest.nes";
 	std::ifstream file(filename, std::ios::binary);
 	if (!file) {
 		std::cerr << "Cannot open file." << std::endl;
@@ -24,11 +25,11 @@ int parseFile() {
 	}
 
 	if (byteArray[0] == 0x4E && byteArray[1] == 0x45 && byteArray[2] == 0x53 && byteArray[3] == 0x1A) {
-		iNES = true;
+		header.iNES = true;
 
 	}
-	if (iNES == true && (byteArray[7] & 0x0c) == 0x08) {
-		NES2 = true;
+	if (header.iNES == true && (byteArray[7] & 0x0c) == 0x08) {
+		header.NES2 = true;
 
 	}
 	// 4th Byte (5th if you include 0th)
@@ -55,10 +56,12 @@ int parseFile() {
 	byte flags7 = byteArray[7];
 	header.VS = flags7 & 0x01;
 	header.PlayChoice = flags7 & 0x02;
-	NES2 = ((flags7 >> 2) & 0x03) == 0x02;
+	header.NES2 = ((flags7 >> 2) & 0x03) == 0x02;
 	header.mapperUpperNybble = flags7 >> 4; // upper 4 bits of mapper number
 
 	header.mapperNumber = (header.mapperUpperNybble << 4) | (header.mapperLowerNybble);
+
+	loadMapper(header.mapperNumber);
 
 	// 8th Byte
 	header.prgRamSize = (static_cast<unsigned int>(byteArray[8])) * 8192;
@@ -100,6 +103,9 @@ int parseFile() {
 	std::cout << "PRG Size: " << header.PRGarray.size() << std::endl;
 	std::cout << "CHR Size: " << header.CHRarray.size() << std::endl;
 
+	std::cout << "Mapper Number: " << header.mapperNumber << std::endl;
+
+	/*
 	std::cout << "PROGRAM ARRAY" << std::endl;
 	for (int element : header.PRGarray) {
 		std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(element) << " ";
@@ -118,4 +124,11 @@ int parseFile() {
 		
 	file.close();
 	return 0;
+}
+
+void ROM::loadMapper(int mapperNumber) {
+	switch(mapperNumber) {
+	case 0: break;
+	
+	}
 }

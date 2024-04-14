@@ -1,4 +1,5 @@
 #pragma once
+
 #ifndef ROM_H
 #define ROM_H
 
@@ -10,57 +11,68 @@
 
 typedef uint8_t byte;
 
-// iNES declarations
-bool iNES;
-bool NES2;
-int parseFile();
+class ROM {
+private:
 
-struct NESHeader {
-    int prgPages;
-    int chrPages;
-    byte ROMFlags = 0;
+public:
+    // Header declarations
+    int parseFile();
+    void loadMapper(int mapperNumber);
 
-    // Booleans for byte 6 of header
-    bool mirror;
-    bool battery;
-    bool trainer;
-    bool fourscreen;
-    byte mapperLowerNybble;
+    struct NESHeader {
+        bool iNES;
+        bool NES2;
 
-    // Booleans for byte 7 of header
-    bool VS;
-    bool PlayChoice;
-    byte mapperUpperNybble;
+        int prgPages;
+        int chrPages;
+        byte ROMFlags = 0;
 
-    byte mapperNumber;
+        // Booleans for byte 6 of header
+        bool mirror;
+        bool battery;
+        bool trainer;
+        bool fourscreen;
+        byte mapperLowerNybble;
 
-    // For byte 8
-    byte prgRamSize;
+        // Booleans for byte 7 of header
+        bool VS;
+        bool PlayChoice;
+        byte mapperUpperNybble;
 
-    // For byte 9
-    bool tvSystem;
+        int mapperNumber;
 
-    // For byte 10
-    byte tvSystemByte;
-    bool prgRam;
-    bool busConflicts;
+        // For byte 8
+        byte prgRamSize;
 
-    byte trainerArray[512];
-    std::vector<byte> PRGarray;
-    std::vector<byte> CHRarray;
-    int byteCounter;
+        // For byte 9
+        bool tvSystem;
+
+        // For byte 10
+        byte tvSystemByte;
+        bool prgRam;
+        bool busConflicts;
+
+        // Array and vectors that hold data from the cartridge
+        byte trainerArray[512];
+        std::vector<byte> PRGarray;
+        std::vector<byte> CHRarray;
+
+        int byteCounter;
+    };
+
+    enum MirroringType {
+        HORIZONTAL,
+        VERTICAL,
+        FOUR_SCREEN
+    };
+
+    enum TVSystem {
+        NTSC,
+        PAL,
+        DUAL
+    };
+
+    // Additional member functions and data members can be declared here
 };
 
-enum MirroringType {
-    HORIZONTAL,
-    VERTICAL,
-    FOUR_SCREEN
-};
-
-enum TVSystem {
-    NTSC,
-    PAL,
-    DUAL
-};
-
-#endif
+#endif // ROM_H
