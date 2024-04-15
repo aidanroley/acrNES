@@ -1,7 +1,9 @@
-
+#pragma once
+#ifndef CPU_H
+#define CPU_H 
 #include "bus.h"
 
-typedef uint8_t byte;
+// typedef uint8_t byte;
 
 class cpu {
 private:
@@ -242,10 +244,5 @@ public:
     
 };
 
-cpu::cpu() {
-    // Constructor body
-}
 
-cpu::~cpu() {
-    // Destructor body
-}
+#endif // CPU_H

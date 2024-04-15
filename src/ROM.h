@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <vector>
 
-typedef uint8_t byte;
+
 
 class ROM {
 private:

@@ -1,5 +1,8 @@
 #include "ppu.h"
-void ppu::handlePPURead(uint16_t ppuRegister) {
+#include "bus.h"
+
+PPU::PPU(Bus* bus) : bus(bus) {}
+void PPU::handlePPURead(uint16_t ppuRegister, byte value) {
 	switch (ppuRegister) {
 
 	// PPUCTRL
@@ -34,14 +37,10 @@ void ppu::handlePPURead(uint16_t ppuRegister) {
 	case 0x2007:
 		break;
 
-	// OAMDMA
-	case 0x4014:
-		break;
-
 	}
 	
 }
-void ppu::handlePPUWrite(uint16_t ppuRegister) {
+void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
 	switch (ppuRegister) {
 
 		// PPUCTRL
@@ -78,9 +77,17 @@ void ppu::handlePPUWrite(uint16_t ppuRegister) {
 
 		// OAMDMA
 	case 0x4014:
+		startAddr = value * 0x100;
+		bus->dmaTransfer(startAddr, OAM, 256);
+
+		// Stall CPU 512 cycles here
 		break;
 
 	}
 
+
+}
+
+void PPU::writeOAM(byte address, byte value) {
 
 }

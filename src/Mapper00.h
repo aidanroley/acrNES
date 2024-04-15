@@ -1,8 +1,11 @@
 #pragma once
-
 #include <vector>
 #include <cstdint>
 #include <iostream>
+#include "bus.h"
+#include "ppuBus.h"
+#include "cpu.h"
+#include "ppu.h"
 
 // Forward declaration
 // class Bus;
@@ -15,8 +18,7 @@ public:
         std::cout << "PRG SIZE IN MAPPER " << PRGarray.size()
             << " CHR SIZE IN MAPPER " << CHRarray.size() << std::endl;
     }
-
-    void writeBusCPU(uint16_t address, uint8_t data);
+    
 
     // void setBus(Bus* b) { bus = b; }
 

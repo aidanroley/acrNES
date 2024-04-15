@@ -939,6 +939,13 @@ void cpu::loadIntelHexFile(const std::string& filename) {
     }
 };
 
+cpu::cpu() {
+    // Constructor body
+}
+
+cpu::~cpu() {
+    // Destructor body
+}
 
 void cpu::loadToMemory(const std::vector<byte>& data, uint16_t startAddress) {
     for (size_t i = 0; i < data.size(); i++) {

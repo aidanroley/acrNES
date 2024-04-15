@@ -1,5 +1,4 @@
 #include "Mapper00.h"
-#include "bus.h"
 #include <iostream>
 
 void Mapper00::mapperCpuRead() {
