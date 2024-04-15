@@ -9,12 +9,12 @@ int main() {
 }
 
 int ROM::parseFile() {
-	NESHeader header;
+	// NESHeader header;
 	header.iNES = false;
 	header.NES2 = false;
 	std::vector<byte> byteArray;
-	// const char* filename = "C:\\Users\\bridg\\Downloads\\Super Mario Bros (E)\\Super Mario Bros (E).nes";
-	const char* filename = "C:\\Users\\bridg\\Downloads\\nestest.nes";
+	const char* filename = "C:\\Users\\Aidan\\Downloads\\Super Mario Bros (E)\\Super Mario Bros (E).nes";
+	//const char* filename = "C:\\Users\\bridg\\Downloads\\nestest.nes";
 	std::ifstream file(filename, std::ios::binary);
 	if (!file) {
 		std::cerr << "Cannot open file." << std::endl;
@@ -61,8 +61,6 @@ int ROM::parseFile() {
 
 	header.mapperNumber = (header.mapperUpperNybble << 4) | (header.mapperLowerNybble);
 
-	loadMapper(header.mapperNumber);
-
 	// 8th Byte
 	header.prgRamSize = (static_cast<unsigned int>(byteArray[8])) * 8192;
 	
@@ -98,6 +96,9 @@ int ROM::parseFile() {
 		}
 		header.byteCounter += header.CHRarray.size();
 	}
+
+	loadMapper(header.mapperNumber);
+
 	std::cout << "Initial Byte Counter: " << header.byteCounter << std::endl;
 
 	std::cout << "PRG Size: " << header.PRGarray.size() << std::endl;
@@ -128,7 +129,7 @@ int ROM::parseFile() {
 
 void ROM::loadMapper(int mapperNumber) {
 	switch(mapperNumber) {
-	case 0: break;
-	
+	case 0: { Mapper00 mapper(header.PRGarray, header.CHRarray); break; }
+	case 1: break;
 	}
 }

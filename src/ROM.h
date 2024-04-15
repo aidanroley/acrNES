@@ -2,6 +2,7 @@
 
 #ifndef ROM_H
 #define ROM_H
+#include "Mapper00.h"
 
 #include <fstream>
 #include <iostream>
@@ -17,7 +18,7 @@ private:
 public:
     // Header declarations
     int parseFile();
-    void loadMapper(int mapperNumber);
+    
 
     struct NESHeader {
         bool iNES;
@@ -59,6 +60,7 @@ public:
 
         int byteCounter;
     };
+    NESHeader header;
 
     enum MirroringType {
         HORIZONTAL,
@@ -72,7 +74,9 @@ public:
         DUAL
     };
 
-    // Additional member functions and data members can be declared here
+    void loadMapper(int mapperNumber);
+
+    
 };
 
 #endif // ROM_H
