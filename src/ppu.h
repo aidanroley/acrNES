@@ -17,6 +17,12 @@ public:
 	Bus* bus = Bus::getInstance();
 	ppuBus* ppuBus = ppuBus::getInstance();
 
+
+	bool horizontal; // Made 2 variables for nametable orientation to avoid confusion
+	bool vertical;
+
+	void mirror(bool mirror);
+
 	void handlePPURead(uint16_t ppuRegister, byte value);
 	void handlePPUWrite(uint16_t ppuRegister, byte value);
 

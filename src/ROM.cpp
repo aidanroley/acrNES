@@ -10,7 +10,8 @@ int ROM::parseFile() {
 	header.NES2 = false;
 	std::vector<byte> byteArray;
 	//const char* filename = "C:\\Users\\bridg\\Downloads\\Super Mario Bros (E)\\Super Mario Bros (E).nes";
-	const char* filename = "C:\\Users\\bridg\\Downloads\\nestest.nes";
+	const char* filename = "C:\\Users\\Aidan\\Downloads\\nestest.nes";
+	//const char* filename = "C:\\Users\\Aidan\\Downloads\\cpu_dummy_reads.nes";
 	std::ifstream file(filename, std::ios::binary);
 	if (!file) {
 		std::cerr << "Cannot open file." << std::endl;
@@ -126,7 +127,7 @@ int ROM::parseFile() {
 
 void ROM::loadMapper(int mapperNumber) {
 	switch(mapperNumber) {
-	case 0: { Mapper00 mapper(header.PRGarray, header.CHRarray); break; }
+	case 0: { Mapper00 mapper(header.PRGarray, header.CHRarray, header.mirror); break; }
 	case 1: break;
 	}
 

@@ -1,6 +1,19 @@
 #include "PPU.h"
 #include "bus.h"
 
+void PPU::mirror(bool mirror) {
+	if (mirror) {
+		horizontal = true;
+		std::cout << "horizontal" << std::endl;
+	}
+	else {
+		vertical = true;
+		std::cout << "vertical" << std::endl;
+	}
+
+
+}
+
 void PPU::handlePPURead(uint16_t ppuRegister, byte value) {
 	switch (ppuRegister) {
 

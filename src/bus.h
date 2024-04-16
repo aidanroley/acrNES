@@ -29,8 +29,14 @@ public:
     void dmaTransfer(uint16_t startAddr, byte* OAM, size_t size);
 
 
-    void initializePRG(const std::vector<uint8_t>& prg);
+    void initializePRGM0(const std::vector<uint8_t>& prg);
     void check();
+
+    // For finding CPU's PC start location
+    uint16_t CpuPcStart(uint16_t pc);
+    byte lowPCStart;
+    byte highPCStart;
+    uint16_t PCStart;
 
    
 

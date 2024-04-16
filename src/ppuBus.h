@@ -9,7 +9,7 @@ class ppuBus : public Singleton<ppuBus> {
 	friend class Singleton<ppuBus>;
 public:
 	std::vector<byte> ppuCHR;
-	void initializeCHR(const std::vector<uint8_t>& chr);
+	void initializeCHRM0(const std::vector<uint8_t>& chr);
 
 	void checkPpuBus();
 };

@@ -12,18 +12,19 @@ class Mapper00 {
 public:
     Bus* bus = Bus::getInstance();
     ppuBus* ppuBus = ppuBus::getInstance();
-
-    Mapper00(const std::vector<uint8_t>& prg, const std::vector<uint8_t>& chr)
+    PPU* PPU = PPU::getInstance();
+    Mapper00(const std::vector<uint8_t>& prg, const std::vector<uint8_t>& chr, bool mirror) // if mirror, horizontal
         : PRGarray(prg), CHRarray(chr) {
         std::cout << "PRG SIZE IN MAPPER " << PRGarray.size()
             << " CHR SIZE IN MAPPER " << CHRarray.size() << std::endl;
-        bus->initializePRG(prg);
-        ppuBus->initializeCHR(chr);
+        bus->initializePRGM0(prg);
+        ppuBus->initializeCHRM0(chr);
+        PPU->mirror(mirror);
     }
     
     byte prgStart = 0x8000;
     // void setBus(Bus* b) { bus = b; }
-    void initializePRG(const std::vector<uint8_t>& prg);
+    // void initializePRG(const std::vector<uint8_t>& prg);
     void mapperCpuRead();
     void mapperCpuWrite(const std::vector<uint8_t>& prg, const std::vector<uint8_t>& chr);
     void mapperPpuRead();
