@@ -34,7 +34,7 @@ void Bus::writeBusCPU(uint16_t address, uint8_t data) {
     }
     else if (address >= 0x2000 && address <= 0x3FFF) {
         uint16_t ppuRegister = address & 0x0007; // Mask to get PPU register
-       // ppu.handlePPUWrite(ppuRegister, data);
+       // ppu->handlePPUWrite(ppuRegister, data);
     }
     else if (address == 0x4014) {
         ppu->handlePPUWrite(address, data);

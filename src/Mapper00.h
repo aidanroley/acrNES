@@ -11,14 +11,13 @@
 class Mapper00 {
 public:
     Bus* bus = Bus::getInstance();
-    ppuBus* ppuBus = ppuBus::getInstance();
     PPU* PPU = PPU::getInstance();
     Mapper00(const std::vector<uint8_t>& prg, const std::vector<uint8_t>& chr, bool mirror) // if mirror, horizontal
         : PRGarray(prg), CHRarray(chr) {
         std::cout << "PRG SIZE IN MAPPER " << PRGarray.size()
             << " CHR SIZE IN MAPPER " << CHRarray.size() << std::endl;
         bus->initializePRGM0(prg);
-        ppuBus->initializeCHRM0(chr);
+        PPU->initializeCHRM0(chr);
         PPU->mirror(mirror);
     }
     

@@ -1,5 +1,5 @@
 #include "PPU.h"
-#include "bus.h"
+#include "cpu.h"
 
 void PPU::mirror(bool mirror) {
 	if (mirror) {
@@ -102,4 +102,13 @@ void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
 
 void PPU::writeOAM(byte address, byte value) {
 
+}
+
+void PPU::checkPpuBus() {
+	std::cout << "CHR PLEASE WORK!!!!" << std::endl;
+	for (const auto& value : ppuCHR) {
+		std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(value) << " ";
+	}
+	SDL_RenderDrawPoint(renderer, 230, 200);
+	SDL_RenderPresent(renderer);
 }
