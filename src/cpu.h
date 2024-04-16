@@ -7,7 +7,7 @@
 
 class cpu {
 private:
-    Bus bus;
+    Bus* bus = Bus::getInstance();
 
 
 

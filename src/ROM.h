@@ -11,11 +11,12 @@
 #include <vector>
 
 
-
 class ROM {
 private:
 
+
 public:
+    Bus* romBus = Bus::getInstance();
     // Header declarations
     int parseFile();
     

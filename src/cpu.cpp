@@ -59,7 +59,7 @@ void cpu::run() {
 
 // Fetches instruction from an address, returns the opcode, increments program counter
 byte cpu::fetch() {
-    byte opcode = bus.readBusCPU(pc);
+    byte opcode = bus->readBusCPU(pc);
     pc++;
     return opcode;
 }
@@ -68,26 +68,26 @@ byte cpu::fetch() {
 
 // Increments pc after current value is taken
 byte cpu::IMMe() {
-    byte operand = bus.readBusCPU(pc);
+    byte operand = bus->readBusCPU(pc);
     pc++;
     return operand;
 }
 
 byte cpu::ZEROe() {
-    zeroPageAddr = bus.readBusCPU(pc++);
+    zeroPageAddr = bus->readBusCPU(pc++);
     return zeroPageAddr;
 
 }
 
 byte cpu::ZEROXe() {
-    zeroPageAddr = bus.readBusCPU(pc);
+    zeroPageAddr = bus->readBusCPU(pc);
     zeroPageAddr = (zeroPageAddr + x) & 0xFF;
     pc++;
     return zeroPageAddr;
 }
 
 byte cpu::ZEROYe() {
-    zeroPageAddr = bus.readBusCPU(pc);
+    zeroPageAddr = bus->readBusCPU(pc);
     zeroPageAddr = (zeroPageAddr + y) & 0xFF;
     pc++;
     return zeroPageAddr;
@@ -96,20 +96,20 @@ byte cpu::ZEROYe() {
 
 // Not sure if I will need the bool variable yet
 byte cpu::RELe() {
-    relative = bus.readBusCPU(pc++);
+    relative = bus->readBusCPU(pc++);
     return relative;
 }
 
 // Reads LSB then MSB then combines them and shifts the MSB to the left
 uint16_t cpu::ABSe() {
-    absolute = bus.readBusCPU(pc) | (bus.readBusCPU(pc + 1) << 8);
+    absolute = bus->readBusCPU(pc) | (bus->readBusCPU(pc + 1) << 8);
     pc += 2;
     return absolute;
 }
 
 // Same as ABS except add x to the address
 uint16_t cpu::ABSXe() {
-    absolute = bus.readBusCPU(pc) | (bus.readBusCPU(pc + 1) << 8);
+    absolute = bus->readBusCPU(pc) | (bus->readBusCPU(pc + 1) << 8);
     pc += 2;
     uint16_t ABSXaddr = absolute + x;
     pageCrossed = (absolute & 0xFF00) != (ABSXaddr & 0xFF00);
@@ -118,7 +118,7 @@ uint16_t cpu::ABSXe() {
 
 // Same as ABS except add y to the address
 uint16_t cpu::ABSYe() {
-    absolute = bus.readBusCPU(pc) | (bus.readBusCPU(pc + 1) << 8);
+    absolute = bus->readBusCPU(pc) | (bus->readBusCPU(pc + 1) << 8);
     pc += 2;
     uint16_t ABSYaddr = absolute + y;
     pageCrossed = (absolute & 0xFF00) != (ABSYaddr & 0xFF00);
@@ -127,22 +127,22 @@ uint16_t cpu::ABSYe() {
 
 // Used just for JMP
 uint16_t cpu::INDe() {
-    uint16_t pointer = bus.readBusCPU(pc) | (bus.readBusCPU(pc + 1) << 8);
+    uint16_t pointer = bus->readBusCPU(pc) | (bus->readBusCPU(pc + 1) << 8);
     pc += 2;
-    uint16_t addressLow = bus.readBusCPU(pointer);
-    uint16_t addressHigh = bus.readBusCPU((pointer & 0xFF00) | ((pointer + 1) & 0x00FF));
+    uint16_t addressLow = bus->readBusCPU(pointer);
+    uint16_t addressHigh = bus->readBusCPU((pointer & 0xFF00) | ((pointer + 1) & 0x00FF));
     jump = (addressHigh << 8) | addressLow;
 
     return jump;
 }
 
 uint16_t cpu::INDXe() {
-    uint16_t indxetemp = bus.readBusCPU(pc++);
+    uint16_t indxetemp = bus->readBusCPU(pc++);
     byte tL = (indxetemp + x) & 0xFF;
     byte tH = (indxetemp + x + 1) & 0xFF;
 
-    byte indexL = bus.readBusCPU(tL);
-    byte indexH = bus.readBusCPU(tH);
+    byte indexL = bus->readBusCPU(tL);
+    byte indexH = bus->readBusCPU(tH);
 
 
     return indexL | indexH << 8;
@@ -150,12 +150,12 @@ uint16_t cpu::INDXe() {
 }
 
 uint16_t cpu::INDYe() {
-    uint16_t indxetemp = bus.readBusCPU(pc++);
+    uint16_t indxetemp = bus->readBusCPU(pc++);
     byte tL = (indxetemp + y) & 0xFF;
     byte tH = (indxetemp + y + 1) & 0xFF;
 
-    byte indexL = bus.readBusCPU(tL);
-    byte indexH = bus.readBusCPU(tH);
+    byte indexL = bus->readBusCPU(tL);
+    byte indexH = bus->readBusCPU(tH);
 
 
     return indexL | indexH << 8;
@@ -170,7 +170,7 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
         auto handlerIt = addressingModeHandlers.find(addressingMode);
         if (handlerIt != addressingModeHandlers.end()) {
             operandAddress = handlerIt->second();
-            operandValue = bus.readBusCPU(operandAddress);
+            operandValue = bus->readBusCPU(operandAddress);
         }
     }
 
@@ -218,7 +218,7 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
             operandValue <<= 1;
             status = (operandValue == 0) ? (status | flags::Z) : (status & ~flags::Z);
             status = (operandValue & 0x80) ? (status | flags::N) : (status & ~flags::N);
-            bus.writeBusCPU(operandAddress, operandValue);
+            bus->writeBusCPU(operandAddress, operandValue);
         }
         break;
 
@@ -454,7 +454,7 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
         // Decrement Memory
     case DEC:
         operandValue -= 1;
-        bus.writeBusCPU(operandAddress, operandValue);
+        bus->writeBusCPU(operandAddress, operandValue);
         if (operandValue == 0) {
             status |= flags::Z;
         }
@@ -528,7 +528,7 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
         // Increment Memory
     case INC:
         operandValue = (operandValue + 1) & 0xFF;
-        bus.writeBusCPU(operandAddress, operandValue);
+        bus->writeBusCPU(operandAddress, operandValue);
         if (operandValue == 0) {
             status |= flags::Z;
         }
@@ -669,7 +669,7 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
             operandValue = operandValue >> 1;
             status = (operandValue == 0) ? (status | flags::Z) : (status & ~flags::Z);
             status = (operandValue & 0x80) ? (status | flags::N) : (status & ~flags::N);
-            bus.writeBusCPU(operandAddress, operandValue);
+            bus->writeBusCPU(operandAddress, operandValue);
         }
         break;
 
@@ -748,7 +748,7 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
             operandValue = (operandValue << 1) | oldCarry;
             status = (operandValue == 0) ? (status | flags::Z) : (status & ~flags::Z);
             status = (operandValue & 0x80) ? (status | flags::N) : (status & ~flags::N);
-            bus.writeBusCPU(operandAddress, operandValue);
+            bus->writeBusCPU(operandAddress, operandValue);
         }
         break;
 
@@ -767,7 +767,7 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
             operandValue = (operandValue >> 1) | oldCarry;
             status = (operandValue == 0) ? (status | flags::Z) : (status & ~flags::Z);
             status = (operandValue & 0x80) ? (status | flags::N) : (status & ~flags::N);
-            bus.writeBusCPU(operandAddress, operandValue);
+            bus->writeBusCPU(operandAddress, operandValue);
         }
         break;
 
@@ -824,17 +824,17 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
 
         // Store Accumulator 
     case STA:
-        bus.writeBusCPU(operandAddress, a);
+        bus->writeBusCPU(operandAddress, a);
         break;
 
         // Store X Register
     case STX:
-        bus.writeBusCPU(operandAddress, x);
+        bus->writeBusCPU(operandAddress, x);
         break;
 
         // Store Y Register
     case STY:
-        bus.writeBusCPU(operandAddress, y);
+        bus->writeBusCPU(operandAddress, y);
         break;
 
         // Transfer Accumulator to X
@@ -884,11 +884,11 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
 
 byte cpu::pop() {
     stackpt++;
-    return bus.readBusCPU(stackpt + 0x100);
+    return bus->readBusCPU(stackpt + 0x100);
 }
 
 void cpu::pushByteToStack(byte value) {
-    bus.writeBusCPU(stackpt + 0x100, value);
+    bus->writeBusCPU(stackpt + 0x100, value);
     stackpt--;
 }
 
@@ -924,7 +924,7 @@ void cpu::loadIntelHexFile(const std::string& filename) {
         if (recordType == 0x00) {
             for (int i = 0; i < byteCount; ++i) {
                 uint8_t dataByte = std::stoi(line.substr(8 + i * 2, 2), nullptr, 16);
-                bus.writeBusCPU(address + i, dataByte);
+                bus->writeBusCPU(address + i, dataByte);
                 /* if (pc2 < 500) { For testing to make sure my parser works
                     std::cout << "Opcode: 0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(dataByte) << std::dec << std::endl;
                     pc2++;
@@ -939,6 +939,7 @@ void cpu::loadIntelHexFile(const std::string& filename) {
     }
 };
 
+
 cpu::cpu() {
     // Constructor body
 }
@@ -947,8 +948,9 @@ cpu::~cpu() {
     // Destructor body
 }
 
+
 void cpu::loadToMemory(const std::vector<byte>& data, uint16_t startAddress) {
     for (size_t i = 0; i < data.size(); i++) {
-        bus.writeBusCPU(startAddress + i, data[i]);
+        bus->writeBusCPU(startAddress + i, data[i]);
     }
 }

@@ -1,13 +1,12 @@
-#include "ppu.h"
+#include "PPU.h"
 #include "bus.h"
 
-PPU::PPU(Bus* bus) : bus(bus) {}
 void PPU::handlePPURead(uint16_t ppuRegister, byte value) {
 	switch (ppuRegister) {
 
 	// PPUCTRL
 	case 0x2000:
-		break;
+		break; 
 
 	// PPUMASK
 	case 0x2001:

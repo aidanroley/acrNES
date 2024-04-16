@@ -1,19 +1,15 @@
 #include "ROM.h"
 
 byte output;  
+// ROM rom;
 
-int main() {
-	ROM rom;
-	int val = rom.parseFile();
-	
-}
 
 int ROM::parseFile() {
 	// NESHeader header;
 	header.iNES = false;
 	header.NES2 = false;
 	std::vector<byte> byteArray;
-	//const char* filename = "C:\\Users\\Aidan\\Downloads\\Super Mario Bros (E)\\Super Mario Bros (E).nes";
+	//const char* filename = "C:\\Users\\bridg\\Downloads\\Super Mario Bros (E)\\Super Mario Bros (E).nes";
 	const char* filename = "C:\\Users\\bridg\\Downloads\\nestest.nes";
 	std::ifstream file(filename, std::ios::binary);
 	if (!file) {
@@ -97,7 +93,6 @@ int ROM::parseFile() {
 		header.byteCounter += header.CHRarray.size();
 	}
 
-	loadMapper(header.mapperNumber);
 
 	std::cout << "Initial Byte Counter: " << header.byteCounter << std::endl;
 
@@ -105,6 +100,8 @@ int ROM::parseFile() {
 	std::cout << "CHR Size: " << header.CHRarray.size() << std::endl;
 
 	std::cout << "Mapper Number: " << header.mapperNumber << std::endl;
+		loadMapper(header.mapperNumber);
+		romBus->check();
 
 	/*
 	std::cout << "PROGRAM ARRAY" << std::endl;
@@ -132,4 +129,5 @@ void ROM::loadMapper(int mapperNumber) {
 	case 0: { Mapper00 mapper(header.PRGarray, header.CHRarray); break; }
 	case 1: break;
 	}
+
 }

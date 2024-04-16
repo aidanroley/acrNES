@@ -5,17 +5,18 @@
 
 typedef uint8_t byte;
 
-class Bus;
+// class Bus;
 
-class PPU {
+class PPU : public Singleton<PPU> {
+	friend class Singleton<PPU>;
 private:
-	Bus* bus;
-	byte OAM[256];
+	byte OAM[256]{};
+	uint16_t startAddr{ 0 };
 
 public:
-	PPU(Bus* bus);
+	Bus* bus = Bus::getInstance();
+	ppuBus* ppuBus = ppuBus::getInstance();
 
-	uint16_t startAddr;
 	void handlePPURead(uint16_t ppuRegister, byte value);
 	void handlePPUWrite(uint16_t ppuRegister, byte value);
 
