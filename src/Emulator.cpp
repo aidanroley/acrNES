@@ -10,7 +10,6 @@ Emulator emulator;
 ROM romMain;
 int main(int argc, char* argv[]) {
 	emulator.SetUpDisplay();
-	// The beginning
 	emulator.start();
 
 	return 0;
@@ -19,9 +18,12 @@ int main(int argc, char* argv[]) {
 void Emulator::start() {
 	int val = romMain.parseFile();
 	PPU->checkPpuBus();
+	PPU->InitializeColors();
 	
+	// The system
 	while (ok) {
-		SDL_RenderPresent(renderer);
+		//SDL_RenderPresent(renderer);
+		ok = false;
 
 	}
 	SDL_Quit();

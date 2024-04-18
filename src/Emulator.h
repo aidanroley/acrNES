@@ -18,13 +18,14 @@ public:
         SDL_Init(SDL_INIT_VIDEO);
         window = SDL_CreateWindow("Scaled 256 x 240 Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 512, 480, SDL_WINDOW_SHOWN);
         renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+        SDL_PixelFormat* format = SDL_AllocFormat(SDL_GetWindowPixelFormat(window));
         SDL_RenderSetLogicalSize(renderer, 256, 240);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawPoint(renderer, 100, 100);
         SDL_RenderPresent(renderer);
 
         // Pass renderer reference to PPU class
-        PPU->InitializeRenderer(renderer);
+        PPU->InitializeRenderer(renderer, format);
     }
 
     void start();

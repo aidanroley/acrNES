@@ -8,14 +8,13 @@
 void Bus::initializePRGM0(const std::vector<uint8_t>& prg) {
     size_t prgSize = prg.size();
 
-
-
     // Ensure the PRG ROM fits within the allocated memory space
     if (0x8000 + prgSize > sizeof(memory)) {
         std::cerr << "PRG ROM size exceeds available memory space." << std::endl;
         return;
     }
 
+    // 0x8000 is the starting location of PRG data
     for (size_t i = 0; i < prgSize; ++i) {
         memory[0x8000 + i] = prg[i];
     }
@@ -40,7 +39,9 @@ void Bus::initializePRGM0(const std::vector<uint8_t>& prg) {
 }
 
 void PPU::initializeCHRM0(const std::vector<uint8_t>& chr) {
-    ppuCHR = chr;
+    for (int i = 0; i < chr.size(); ++i) {
+        ppuVRAM[i] = chr[i];
+    }
 }
 void Mapper00::mapperCpuRead() {
     

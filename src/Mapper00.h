@@ -6,12 +6,14 @@
 #include "cpu.h"
 #include "PPU.h"
 
-//class Bus;
-
 class Mapper00 {
 public:
+
+    // Get the synchronized instance of Bus/PPU
     Bus* bus = Bus::getInstance();
     PPU* PPU = PPU::getInstance();
+     
+    // Put PGR in the bus, put CHR in PPU, pass mirror orientation into PPU 
     Mapper00(const std::vector<uint8_t>& prg, const std::vector<uint8_t>& chr, bool mirror) // if mirror, horizontal
         : PRGarray(prg), CHRarray(chr) {
         std::cout << "PRG SIZE IN MAPPER " << PRGarray.size()
