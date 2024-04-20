@@ -14,7 +14,20 @@ void PPU::mirror(bool mirror) {
 
 }
 
-void PPU::handlePPURead(uint16_t ppuRegister, byte value) {
+// 16x16 grid 4x4 pixel tiles
+// Each bit in first plane controls bit 0, corresponding bit in second plane controls bit 1
+void PPU::getPatternTable(byte address) {
+	byte BG = ppuVRAM[0x3F00];
+
+}
+
+int PPU::getPixelValue(uint16_t address) {
+
+
+
+}
+
+byte PPU::handlePPURead(uint16_t ppuRegister, byte value) {
 	byte data = 0;
 	switch (ppuRegister) {
 
@@ -51,9 +64,13 @@ void PPU::handlePPURead(uint16_t ppuRegister, byte value) {
 
 	// PPUDATA
 	case 0x2007:
+		data = ppuVRAM[VRAMaddress];
+		VRAMaddress += (PPUCTRL.I == 0 ? 1 : 32);
+		VRAMaddress & 0x3FF;
 		break;
 
 	}
+	return data;
 	
 }
 void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
@@ -103,24 +120,47 @@ void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
 		// OAMDATA
 	case 0x2004:
 		OAM[OAMAddr] = value;
+		OAMAddr = (OAMAddr + 1) % 256;
 		break;
 
 		// PPUSCROLL
 	case 0x2005:
+		if (registers.w == 0) {
+			// X scroll
+
+			registers.w = 1;
+		}
+		else {
+			// Y scroll
+
+			registers.w = 0;
+		}
 		break;
 
 		// PPUADDR
 	case 0x2006:
+		if (registers.w == 0) {
+			PPUADDR.upper = value;
+			registers.w = 1;
+		}
+		else {
+			PPUADDR.lower = value;
+			VRAMaddress = ((PPUADDR.upper << 8) | PPUADDR.lower) & 0x3FFF;
+			registers.w = 0;
+		}
 		break;
 
 		// PPUDATA
 	case 0x2007:
+		ppuVRAM[VRAMaddress] = value;
+		VRAMaddress += (PPUCTRL.I == 0 ? 1 : 32);
+		VRAMaddress & 0x3FFF;
 		break;
 
 		// OAMDMA
 	case 0x4014:
-		startAddr = value * 0x100;
-		bus->dmaTransfer(startAddr, OAM, 256);
+		OAMstartAddr = value * 0x100;
+		bus->dmaTransfer(OAMstartAddr, OAM, 256);
 
 		// Stall CPU 512 cycles here
 		break;

@@ -13,7 +13,8 @@ private:
 	SDL_Renderer* renderer;
 	SDL_PixelFormat* format;
 	byte OAM[256]{ 0 };
-	uint16_t startAddr{ 0 };
+	uint16_t OAMstartAddr{ 0 };
+	int patternTable[0x2000];
 
 public:
 
@@ -29,6 +30,8 @@ public:
 	// Initialize CHR, transfer CHR data from Mapper to PPU
 	std::vector<byte> ppuCHR;
 	void initializeCHRM0(const std::vector<uint8_t>& chr); // Might change this to vector since it should be 8KB, not yet.
+	void getPatternTable(byte address);
+	int getPixelValue(bool PT, uint16_t tile_index, byte x, byte y);
 
 	// PPU VRAM
 	byte ppuVRAM[0x4000]{ 0 };
@@ -83,15 +86,27 @@ public:
 	};
 	PPUSTATUS PPUSTATUS;
 
+	struct PPUADDR {
+		byte lower;
+		byte upper;
+	};
+	PPUADDR PPUADDR;
+	uint16_t VRAMaddress;
+
 	byte OAMAddr = 0;
 
-	// Shared flag for PPUSCROLL AND PPUADDR
-	struct PPUSCROLLADDR {
-		bool w; // SCROLL and ADDR share this register
+	// PPU internal registers
+	struct PPUREGISTERS {
+		bool w; // SCROLL and ADDR share this register for writing
+		byte v;
+		byte t;
+		byte x;
+
 	};
+	PPUREGISTERS registers;
 
 	// Handle read/write to PPU Registers
-	void handlePPURead(uint16_t ppuRegister, byte value);
+	byte handlePPURead(uint16_t ppuRegister, byte value);
 	void handlePPUWrite(uint16_t ppuRegister, byte value);
 
 	// RGB values: https://www.nesdev.org/wiki

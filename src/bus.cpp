@@ -23,7 +23,7 @@ uint8_t Bus::readBusCPU(uint16_t address) {
     }
     else if (address >= 0x2000 && address <= 0x3FFF) {
         uint16_t ppuRegister = address & 0x0007; // Mask to get PPU register
-       // return ppu.handlePPURead(ppuRegister);
+       // return ppu->handlePPURead(ppuRegister);
     }
     return 0xFF; // Default if not in handled ranges
 }
