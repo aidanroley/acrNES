@@ -16,14 +16,34 @@ void PPU::mirror(bool mirror) {
 
 // 16x16 grid 4x4 pixel tiles
 // Each bit in first plane controls bit 0, corresponding bit in second plane controls bit 1
+// 0x0000 - 0x1FFF (PATTERN)
+// 0x3F00 - 0x3FFF (PALETTE)
+
 void PPU::getPatternTable(byte address) {
 	byte BG = ppuVRAM[0x3F00];
 
 }
 
-int PPU::getPixelValue(uint16_t address) {
+// You need to know the tile number, which pattern table, and row/column to get the pixel value
+// Here the Y is the row, X is the column within the tile specified
+// PT is which pattern table it's in
 
+int PPU::getPixelValue(bool PT, uint16_t tile_index, byte x, byte y) {
 
+	// Fetch base address of the tile
+	uint16_t baseAddress = tile_index * 16 + (PT ? 0x1000 : 0);
+
+	// Get upper and lower plane address
+	byte lPlane = ppuVRAM[baseAddress + y];
+	byte uPlane = ppuVRAM[baseAddress + y + 8];
+
+	// Get column of the bit corresponding to pixel (x)
+	byte bit0 = (lPlane >> (7 - x)) & 1;
+	byte bit1 = (uPlane >> (7 - x)) & 1;
+
+	// Concatenate bits
+	byte pixelOffset = (bit1 << 1) | bit0;
+	return pixelOffset;
 
 }
 
@@ -152,7 +172,7 @@ void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
 
 		// PPUDATA
 	case 0x2007:
-		ppuVRAM[VRAMaddress] = value;
+		writePPUBus(VRAMaddress, value); // ppuVRAM[VRAMaddress] = value;
 		VRAMaddress += (PPUCTRL.I == 0 ? 1 : 32);
 		VRAMaddress & 0x3FFF;
 		break;
@@ -170,6 +190,10 @@ void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
 
 }
 
+void PPU::clock() {
+
+}
+
 void PPU::writeOAM(byte address, byte value) {
 
 }
@@ -181,4 +205,94 @@ void PPU::checkPpuBus() {
 	}
 	SDL_RenderDrawPoint(renderer, 230, 200);
 	SDL_RenderPresent(renderer);	
+}
+
+
+// Because of how nametables are set up, writing to one address may affect another address
+void PPU::writePPUBus(uint16_t address, byte value) {
+
+	// Pattern memory
+	if (address >= 0x0000 && address < 0x2000) {
+		ppuVRAM[address] = value;
+	}
+
+	// This is the nametable range in memory
+	else if (address >= 0x2000 && address <= 0x3EFF) {
+
+		// If nametables are horiontally mirrored
+		if (horizontal) {
+
+			if (address < 0x2400) {
+				ppuVRAM[address] = value;
+				ppuVRAM[address + 0x400] = value; // Mirror to that nametable
+
+			}
+			else if (address < 0x2800) {
+				ppuVRAM[address] = value;
+				ppuVRAM[address - 0x400] = value;
+			}
+			else if (address < 0x2C00) {
+				ppuVRAM[address] = value;
+				ppuVRAM[address + 0x400] = value;
+			}
+			else {
+				ppuVRAM[address] = value;
+				ppuVRAM[address - 0x400] = value;
+			}
+		}
+
+		// If nametables are vertically mirrored
+		if (vertical) {
+			
+			if (address < 0x2400) {
+				ppuVRAM[address] = value;
+				ppuVRAM[address + 0x800] = value;
+			}
+			else if (address < 0x2800) {
+				ppuVRAM[address] = value;
+				ppuVRAM[address + 0x800] = value;
+			}
+			else if (address < 0x2C00) {
+				ppuVRAM[address] = value;
+				ppuVRAM[address - 0x800] = value;
+			}
+			else {
+				ppuVRAM[address] = value;
+				ppuVRAM[address - 0x800] = value;
+			}
+		}
+		
+	}
+
+	// This handles palette memory mirrors
+	else if (address >= 0x3F00 && address <= 0x3FFF) {
+
+		uint16_t mirroredPaletteAddr = 0;
+
+		// Everything at and above 0x3F20 are mirorrs of addresses at and below 0x3F1F
+		if (address >= 0x3F20) {
+			address = (address & 0x001F) | 0x3F00;
+		}
+
+		if (address == 0x3F10) {
+			mirroredPaletteAddr = 0x3F00;
+		}
+		else if (address == 0x3F14) {
+			mirroredPaletteAddr = 0x3F04;
+		}
+		else if (address == 0x3F18) {
+			mirroredPaletteAddr = 0x3F08;
+		}
+		else if (address == 0x3F1C) {
+			mirroredPaletteAddr = 0x3F0C;
+		}
+
+		ppuVRAM[address] = value;
+
+		// If mirroredPalletteAddr has been altered then write to its address
+		if (mirroredPaletteAddr != 0) {
+			ppuVRAM[mirroredPaletteAddr] = value;
+		}
+	}
+
 }

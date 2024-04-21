@@ -39,8 +39,8 @@ public:
 	void checkPpuBus();
 
 	// Made 2 variables for nametable orientation to avoid confusion
-	bool horizontal; 
-	bool vertical;
+	bool horizontal = false; 
+	bool vertical = false;
 
 	// Determine whether horizontal or vertically oriented nametable
 	void mirror(bool mirror);
@@ -98,8 +98,8 @@ public:
 	// PPU internal registers
 	struct PPUREGISTERS {
 		bool w; // SCROLL and ADDR share this register for writing
-		byte v;
-		byte t;
+		// byte v;
+		uint16_t t;
 		byte x;
 
 	};
@@ -180,5 +180,12 @@ public:
 		pixelColors[0x3E] = SDL_MapRGB(format, 0, 0, 0);
 		pixelColors[0x3F] = SDL_MapRGB(format, 0, 0, 0);
 	}
+
+	int scanline = 0;
+
+	void clock();
+
+	byte readPPUBus(uint16_t address);
+	void writePPUBus(uint16_t address, byte value);
 };
 #endif
