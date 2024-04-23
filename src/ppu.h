@@ -98,7 +98,7 @@ public:
 	// PPU internal registers
 	struct PPUREGISTERS {
 		bool w; // SCROLL and ADDR share this register for writing
-		// byte v;
+		byte v;
 		uint16_t t;
 		byte x;
 
@@ -181,7 +181,19 @@ public:
 		pixelColors[0x3F] = SDL_MapRGB(format, 0, 0, 0);
 	}
 
-	int scanline = 0;
+	int scanline = -1;
+	int PPUcycle = 0;
+	bool OddFrame;
+
+	// For nametables, coarse is tile position, fine is pixel position.
+	// Tiles are 32 horizontally, 30 vertically.
+	// Pixels are 8x8 in each tile.
+	int xCoarse;
+	int yCoarse;
+	int xFine;
+	int yFine;
+
+	byte dataBuffer;
 
 	void clock();
 

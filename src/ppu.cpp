@@ -84,9 +84,16 @@ byte PPU::handlePPURead(uint16_t ppuRegister, byte value) {
 
 	// PPUDATA
 	case 0x2007:
-		data = ppuVRAM[VRAMaddress];
+		data = dataBuffer;
+		dataBuffer = ppuVRAM[VRAMaddress];
+
+		// Buffer not needed for palette memory
+		if (VRAMaddress > 0x3EFF) {
+			data = ppuVRAM[VRAMaddress];
+		}
+
 		VRAMaddress += (PPUCTRL.I == 0 ? 1 : 32);
-		VRAMaddress & 0x3FF;
+		// VRAMaddress & 0x3FFF;
 		break;
 
 	}
@@ -147,12 +154,14 @@ void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
 	case 0x2005:
 		if (registers.w == 0) {
 			// X scroll
-
+			xFine = value & 0x07; // Set this to lower 3 bits
+			xCoarse = value >> 3; // Upper 5 bits
 			registers.w = 1;
 		}
 		else {
 			// Y scroll
-
+			yFine = value & 0x07;
+			yCoarse = value >> 3;
 			registers.w = 0;
 		}
 		break;
@@ -190,17 +199,13 @@ void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
 
 }
 
-void PPU::clock() {
-
-}
-
 void PPU::writeOAM(byte address, byte value) {
 
 }
 
 void PPU::checkPpuBus() {
 	std::cout << "CHR PLEASE WORK!!!!" << std::endl;
-	for (const auto& value : ppuCHR) {
+	for (const auto& value : ppuVRAM) {
 		std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(value) << " ";
 	}
 	SDL_RenderDrawPoint(renderer, 230, 200);
@@ -295,4 +300,26 @@ void PPU::writePPUBus(uint16_t address, byte value) {
 		}
 	}
 
+}
+
+void PPU::clock() {
+
+	if (scanline < 240) {
+
+		if (scanline == -1 && PPUcycle == 1) {
+
+			// Clear sprite 0, overflow, vblank
+			PPUSTATUS.O = false;
+			PPUSTATUS.V = false;
+			PPUSTATUS.S = false;
+		}
+
+		else if (scanline == -1 && PPUcycle >= 280 && PPUcycle <= 304) {
+
+			if (PPUcycle == 280) {
+
+				registers.v = registers.t;
+			}
+		}
+	}
 }
