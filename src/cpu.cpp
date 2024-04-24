@@ -218,7 +218,8 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
             operandValue <<= 1;
             status = (operandValue == 0) ? (status | flags::Z) : (status & ~flags::Z);
             status = (operandValue & 0x80) ? (status | flags::N) : (status & ~flags::N);
-            bus->writeBusCPU(operandAddress, operandValue);
+            bus->storeTempValues(operandAddress, operandValue, cycleCount);
+            // bus->writeBusCPU(operandAddress, operandValue);
         }
         break;
 
@@ -454,7 +455,8 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
         // Decrement Memory
     case DEC:
         operandValue -= 1;
-        bus->writeBusCPU(operandAddress, operandValue);
+        bus->storeTempValues(operandAddress, operandValue, cycleCount);
+        // bus->writeBusCPU(operandAddress, operandValue);
         if (operandValue == 0) {
             status |= flags::Z;
         }
@@ -528,7 +530,8 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
         // Increment Memory
     case INC:
         operandValue = (operandValue + 1) & 0xFF;
-        bus->writeBusCPU(operandAddress, operandValue);
+        bus->storeTempValues(operandAddress, operandValue, cycleCount);
+        // bus->writeBusCPU(operandAddress, operandValue);
         if (operandValue == 0) {
             status |= flags::Z;
         }
@@ -669,7 +672,8 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
             operandValue = operandValue >> 1;
             status = (operandValue == 0) ? (status | flags::Z) : (status & ~flags::Z);
             status = (operandValue & 0x80) ? (status | flags::N) : (status & ~flags::N);
-            bus->writeBusCPU(operandAddress, operandValue);
+            bus->storeTempValues(operandAddress, operandValue, cycleCount);
+            // bus->writeBusCPU(operandAddress, operandValue);
         }
         break;
 
@@ -748,7 +752,8 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
             operandValue = (operandValue << 1) | oldCarry;
             status = (operandValue == 0) ? (status | flags::Z) : (status & ~flags::Z);
             status = (operandValue & 0x80) ? (status | flags::N) : (status & ~flags::N);
-            bus->writeBusCPU(operandAddress, operandValue);
+            bus->storeTempValues(operandAddress, operandValue, cycleCount);
+            // bus->writeBusCPU(operandAddress, operandValue);
         }
         break;
 
@@ -767,7 +772,8 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
             operandValue = (operandValue >> 1) | oldCarry;
             status = (operandValue == 0) ? (status | flags::Z) : (status & ~flags::Z);
             status = (operandValue & 0x80) ? (status | flags::N) : (status & ~flags::N);
-            bus->writeBusCPU(operandAddress, operandValue);
+            bus->storeTempValues(operandAddress, operandValue, cycleCount);
+            // bus->writeBusCPU(operandAddress, operandValue);
         }
         break;
 
@@ -824,17 +830,20 @@ void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes address
 
         // Store Accumulator 
     case STA:
-        bus->writeBusCPU(operandAddress, a);
+        bus->storeTempValues(operandAddress, operandValue, cycleCount);
+        // bus->writeBusCPU(operandAddress, a);
         break;
 
         // Store X Register
     case STX:
-        bus->writeBusCPU(operandAddress, x);
+        bus->storeTempValues(operandAddress, operandValue, cycleCount);
+        // bus->writeBusCPU(operandAddress, x);
         break;
 
         // Store Y Register
     case STY:
-        bus->writeBusCPU(operandAddress, y);
+        bus->storeTempValues(operandAddress, operandValue, cycleCount);
+        // bus->writeBusCPU(operandAddress, y);
         break;
 
         // Transfer Accumulator to X
@@ -888,7 +897,8 @@ byte cpu::pop() {
 }
 
 void cpu::pushByteToStack(byte value) {
-    bus->writeBusCPU(stackpt + 0x100, value);
+    bus->storeTempValues(stackpt + 0x100, value, cycleCount);
+    // bus->writeBusCPU(stackpt + 0x100, value);
     stackpt--;
 }
 

@@ -184,6 +184,7 @@ public:
 	int scanline = -1;
 	int PPUcycle = 0;
 	bool OddFrame;
+	bool enableRendering;
 
 	// For nametables, coarse is tile position, fine is pixel position.
 	// Tiles are 32 horizontally, 30 vertically.

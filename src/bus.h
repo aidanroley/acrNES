@@ -12,6 +12,7 @@
 
 class PPU;
 class Mapper00;
+class cpu;
 
 typedef uint8_t byte;
 
@@ -21,6 +22,7 @@ private:
     Bus();
     PPU* ppu; 
     Mapper00* mapper00;
+    cpu* cpu;
 public:
     uint8_t memory[0x10000]; // Fixed size to 0x4000 which is 16KB, not 64KB
     // Bus();
@@ -45,6 +47,18 @@ public:
 
     // CPU address
     void writeBusCPU(uint16_t address, uint8_t data);
+
+    void busClock();
+
+    // For cycles
+    int cpuTempCycles;
+    byte cpuTempData;
+    uint16_t cpuTempAddr;
+    int ppuCycles = 0;
+    int cpuCycles = 0;
+    bool dontDecrement = false;
+
+    void storeTempValues(uint16_t operandAddress, byte operandValue, int cycles);
 };
 
 #endif // BUS_H

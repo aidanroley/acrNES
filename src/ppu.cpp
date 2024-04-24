@@ -304,6 +304,7 @@ void PPU::writePPUBus(uint16_t address, byte value) {
 
 void PPU::clock() {
 
+	// https://www.nesdev.org/w/images/default/4/4f/Ppu.svg <-- Very useful diagram
 	if (scanline < 240) {
 
 		if (scanline == -1 && PPUcycle == 1) {
@@ -320,6 +321,31 @@ void PPU::clock() {
 
 				registers.v = registers.t;
 			}
+		}
+
+		else if (scanline == 0 && PPUcycle == 0 && OddFrame && PPUMASK.b) {
+
+			PPUcycle = 1;
+		}
+
+		else if (scanline > 0 && PPUcycle == 0) {
+
+			// Idle
+		}
+
+		// At 256 it increments vert(v) as well
+		else if (PPUcycle > 0 && PPUcycle < 256) {
+			
+			switch (PPUcycle % 8) {
+				
+			case 0:
+				// inc. hori(v)
+				break;
+
+			case 1:
+				break;
+			}
+
 		}
 	}
 }

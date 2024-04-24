@@ -74,3 +74,37 @@ uint16_t Bus::CpuPcStart(uint16_t pc) {
     return PCStart;
 }
 
+void Bus::storeTempValues(uint16_t operandAddress, byte operandValue, int cycleCount) {
+    cpuTempAddr = operandAddress;
+    cpuTempData = operandValue;
+    cpuTempCycles = cycleCount;
+}
+
+void Bus::busClock() {
+
+    // PPU runs 3 times as fast as CPU
+    if (cpuTempCycles == 0 && (ppuCycles % 3 == 0)) {
+
+        cpu->run();
+    }
+
+    // Only write to it when its one cycle from being done
+    else if (cpuTempCycles == 1) {
+
+        writeBusCPU(cpuTempAddr, cpuTempData);
+    }
+
+    else if (cpuTempCycles > 1) {   
+        
+        // If cycles > 0, we need to wait before fetching next instruction
+    }
+
+    ppu->clock();
+
+
+    // idk if I should decrement right after cpu run
+    cpuTempCycles--;
+    cpuCycles++;
+    ppuCycles++;
+
+}
