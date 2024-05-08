@@ -86,6 +86,7 @@ void Bus::busClock() {
     if (cpuTempCycles == 0 && (ppuCycles % 3 == 0)) {
 
         cpu->run();
+        cpuCycles++;
     }
 
     // Only write to it when its one cycle from being done
@@ -100,11 +101,10 @@ void Bus::busClock() {
     }
 
     ppu->clock();
+    ppuCycles++;
 
 
     // idk if I should decrement right after cpu run
     cpuTempCycles--;
-    cpuCycles++;
-    ppuCycles++;
 
 }

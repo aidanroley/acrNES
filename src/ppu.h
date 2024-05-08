@@ -98,9 +98,9 @@ public:
 	// PPU internal registers
 	struct PPUREGISTERS {
 		bool w; // SCROLL and ADDR share this register for writing
-		byte v;
+		uint16_t v;
 		uint16_t t;
-		byte x;
+		byte x; // Fine scroll
 
 	};
 	PPUREGISTERS registers;
