@@ -47,6 +47,18 @@ int PPU::getPixelValue(bool PT, uint16_t tile_index, byte x, byte y) {
 
 }
 
+void PPU::horizontalTtoV() {
+	xFine = txFine;
+	xCoarse = txCoarse;
+
+}
+
+void PPU:: verticalTtoV() {
+	yFine = tyFine;
+	yCoarse = tyCoarse;
+
+}
+
 byte PPU::handlePPURead(uint16_t ppuRegister, byte value) {
 	byte data = 0;
 	switch (ppuRegister) {
@@ -115,10 +127,10 @@ void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
 
 		// Change nametable address based on NN flag
 		switch (PPUCTRL.NN) {
-		case 0: NametableAddr = 0x2000; break;
-		case 1: NametableAddr = 0x2400; break;
-		case 2: NametableAddr = 0x2800; break;
-		case 3: NametableAddr = 0x2C00; break;
+		case 0: TempNametableAddr = 0x2000; break;
+		case 1: TempNametableAddr = 0x2400; break;
+		case 2: TempNametableAddr = 0x2800; break;
+		case 3: TempNametableAddr = 0x2C00; break;
 		}
 		break;
 	
@@ -154,14 +166,14 @@ void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
 	case 0x2005:
 		if (registers.w == 0) {
 			// X scroll
-			xFine = value & 0x07; // Set this to lower 3 bits
-			xCoarse = value >> 3; // Upper 5 bits
+			txFine = value & 0x07; // Set this to lower 3 bits
+			txCoarse = value >> 3; // Upper 5 bits
 			registers.w = 1;
 		}
 		else {
 			// Y scroll
-			yFine = value & 0x07;
-			yCoarse = value >> 3;
+			tyFine = value & 0x07;
+			tyCoarse = value >> 3;
 			registers.w = 0;
 		}
 		break;
@@ -304,6 +316,12 @@ void PPU::writePPUBus(uint16_t address, byte value) {
 
 void PPU::clock() {
 
+	if (scanline > -1 && scanline < 240 && PPUcycle == 257) {
+
+		horizontalTtoV();
+
+	}
+
 	// https://www.nesdev.org/w/images/default/4/4f/Ppu.svg <-- Very useful diagram
 	if (scanline < 240) {
 
@@ -317,11 +335,10 @@ void PPU::clock() {
 
 		else if (scanline == -1 && PPUcycle >= 280 && PPUcycle <= 304) {
 
-			if (PPUcycle == 280) {
-
-				registers.v = registers.t;
-			}
+			verticalTtoV();
+			
 		}
+
 
 		else if (scanline == 0 && PPUcycle == 0 && OddFrame && PPUMASK.b) {
 
@@ -334,22 +351,55 @@ void PPU::clock() {
 		}
 
 		// At 256 it increments vert(v) as well
-		else if (PPUcycle > 0 && PPUcycle < 256) {
+		else if (PPUcycle > 0 && PPUcycle < 256 && scanline < 240) {
 			
 			switch (PPUcycle % 8) {
-				
+					
 			case 0:
-				// inc. hori(v)
+				if ((VRAMaddress & 0x001F) == 31) {
+					VRAMaddress &= ~0x001F;
+					VRAMaddress ^= 0x0400;
+				}
+				else {
+					VRAMaddress++;
+				}
 				break;
 
 			case 1:
 				break;
 
-			case 2: 
-
+			case 2:
+				tileID = ppuVRAM[registers.v];
 				break;
+
+			case 3:
+				break;
+
+			case 4:
+				break;
+
+			case 5:
+				break;
+
+			case 6:
+				break;
+
+			case 7:
+				break;
+
+			case 8:
+				break;
+
 			}
 
 		}
+
+	}
+
+	// Vertical blank has started
+	if (scanline == 241 && PPUcycle == 1) {
+
+		PPUSTATUS.V == true;
+
 	}
 }

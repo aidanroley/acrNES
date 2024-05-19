@@ -98,8 +98,8 @@ public:
 	// PPU internal registers
 	struct PPUREGISTERS {
 		bool w; // SCROLL and ADDR share this register for writing
-		uint16_t v;
-		uint16_t t;
+		uint16_t v; // Current VRAM addr
+		uint16_t t; // Temp VRAM addr
 		byte x; // Fine scroll
 
 	};
@@ -189,6 +189,11 @@ public:
 	// For nametables, coarse is tile position, fine is pixel position.
 	// Tiles are 32 horizontally, 30 vertically.
 	// Pixels are 8x8 in each tile.
+	int txCoarse;
+	int tyCoarse;
+	int txFine;
+	int tyFine;
+
 	int xCoarse;
 	int yCoarse;
 	int xFine;
@@ -200,5 +205,7 @@ public:
 
 	byte readPPUBus(uint16_t address);
 	void writePPUBus(uint16_t address, byte value);
+
+	int tileID;
 };
 #endif
