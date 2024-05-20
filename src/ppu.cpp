@@ -59,6 +59,14 @@ void PPU:: verticalTtoV() {
 
 }
 
+void PPU::incHorizontal() {
+
+}
+
+void PPU::incVertical() {
+
+}
+
 byte PPU::handlePPURead(uint16_t ppuRegister, byte value) {
 	byte data = 0;
 	switch (ppuRegister) {
@@ -392,6 +400,11 @@ void PPU::clock() {
 
 			}
 
+		}
+
+		else if (PPUcycle == 256) {
+			incHorizontal();
+			incVertical();
 		}
 
 	}

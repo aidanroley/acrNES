@@ -63,7 +63,7 @@ public:
 		byte NN : 2; // 1 | 0: Base nametable address (0 = $2000; 1 = $2400; 2 = $2800; 3 = $2C00)
 	};
 	PPUCTRL PPUCTRL;
-	uint16_t NametableAddr;
+	uint16_t TempNametableAddr;
 
 	// Flags for PPUMASK
 	struct PPUMASK {
@@ -198,6 +198,12 @@ public:
 	int yCoarse;
 	int xFine;
 	int yFine;
+
+	void horizontalTtoV();
+	void verticalTtoV();
+
+	void incHorizontal();
+	void incVertical();
 
 	byte dataBuffer;
 
