@@ -48,22 +48,46 @@ int PPU::getPixelValue(bool PT, uint16_t tile_index, byte x, byte y) {
 }
 
 void PPU::horizontalTtoV() {
-	xFine = txFine;
-	xCoarse = txCoarse;
+	 VRAMaddress = (VRAMaddress & 0x7BE0) | (registers.t & 0x041F);
 
 }
 
 void PPU:: verticalTtoV() {
-	yFine = tyFine;
-	yCoarse = tyCoarse;
+	VRAMaddress = (VRAMaddress & 0x041F) | (registers.t & 0x7BE0);
+	
 
 }
 
 void PPU::incHorizontal() {
+	if ((VRAMaddress & 0x001F) == 31) {
+		VRAMaddress &= ~0x001F;
+		VRAMaddress ^= 0x0400;
+	}
+	else {
+		VRAMaddress++;
+	}
 
 }
 
 void PPU::incVertical() {
+	if ((VRAMaddress & 0x7000) != 0x7000) {
+		VRAMaddress += 0x1000;
+	}
+	else {
+		VRAMaddress &= ~0x7000;
+		yCoarse = (VRAMaddress & 0x03E0) >> 5;
+		if (yCoarse == 29) {
+			yCoarse = 0;
+			VRAMaddress ^= 0x8000;
+		}
+		else if (yCoarse == 31) {
+			yCoarse = 0;
+		}
+		else {
+			yCoarse += 1;
+		}
+		VRAMaddress = (VRAMaddress & ~0x03E0) | (yCoarse << 5);
+	}
 
 }
 
@@ -174,14 +198,17 @@ void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
 	case 0x2005:
 		if (registers.w == 0) {
 			// X scroll
-			txFine = value & 0x07; // Set this to lower 3 bits
+			xFine = value & 0x07; // Set this to lower 3 bits
 			txCoarse = value >> 3; // Upper 5 bits
+			registers.t = (registers.t & 0x7FE0) | (txCoarse);
 			registers.w = 1;
 		}
 		else {
 			// Y scroll
 			tyFine = value & 0x07;
 			tyCoarse = value >> 3;
+			registers.t = (registers.t & 0x0C1F) | ((tyFine) << 12);
+			registers.t = (registers.t & 0xF83F) | ((tyCoarse) << 5);
 			registers.w = 0;
 		}
 		break;
@@ -377,7 +404,7 @@ void PPU::clock() {
 				break;
 
 			case 2:
-				tileID = ppuVRAM[registers.v];
+				tileID = ppuVRAM[VRAMaddress];
 				break;
 
 			case 3:
@@ -404,7 +431,10 @@ void PPU::clock() {
 
 		else if (PPUcycle == 256) {
 			incHorizontal();
-			incVertical();
+
+			if (PPUMASK.b || PPUMASK.s) {
+				incVertical();
+			}
 		}
 
 	}
