@@ -22,8 +22,9 @@ void Emulator::start() {
 	
 	// The system
 	while (ok) {
-		//SDL_RenderPresent(renderer);
-		ok = false;
+		SDL_RenderPresent(renderer);
+		bus->busClock();
+
 
 	}
 	SDL_Quit();

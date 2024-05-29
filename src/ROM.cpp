@@ -9,8 +9,8 @@ int ROM::parseFile() {
 	header.iNES = false;
 	header.NES2 = false;
 	std::vector<byte> byteArray;
-	const char* filename = "C:\\Users\\bridg\\Downloads\\Super Mario Bros (E)\\Super Mario Bros (E).nes";
-	//const char* filename = "C:\\Users\\bridg\\Downloads\\nestest.nes";
+	//const char* filename = "C:\\Users\\bridg\\Downloads\\Super Mario Bros (E)\\Super Mario Bros (E).nes";
+	const char* filename = "C:\\Users\\bridg\\Downloads\\nestest.nes";
 	//const char* filename = "C:\\Users\\Aidan\\Downloads\\cpu_dummy_reads.nes";
 	std::ifstream file(filename, std::ios::binary);
 	if (!file) {

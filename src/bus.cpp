@@ -81,6 +81,16 @@ void Bus::storeTempValues(uint16_t operandAddress, byte operandValue, int cycleC
 }
 
 void Bus::busClock() {
+    std::cout << "yeah" << std::endl;
+    if (ppuCycles == 0) {
+        // cpu->run();
+        std::cout << "yea" << std::endl;
+        cpuCycles++;
+    }
+    std::cout << "awesome sauce" << std::endl;
+    ppu->clock();
+    ppuCycles++;
+   
 
     // PPU runs 3 times as fast as CPU
     if (cpuTempCycles == 0 && (ppuCycles % 3 == 0)) {

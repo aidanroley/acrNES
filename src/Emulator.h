@@ -9,6 +9,7 @@ private:
 public:
 
 	PPU* PPU = PPU::getInstance();
+    Bus* bus = Bus::getInstance();
 	bool ok = true;
 
 	Emulator() : window(nullptr), renderer(nullptr), PPU(PPU::getInstance()) {}

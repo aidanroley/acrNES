@@ -17,9 +17,9 @@ int mainCPU() {
 }
 
 void cpu::run() {
-    loadIntelHexFile("C:/Users/Aidan/Downloads/functional.hex");
-    while (true) {
-        long startTime = cpu::getCurrentTime();
+    // loadIntelHexFile("C:/Users/Aidan/Downloads/functional.hex");
+    // while (true) {
+    long startTime = cpu::getCurrentTime();
         cycleCount = 0;
         while (cycleCount < 1790000 / 60) { // 1790000 / 60
             byte opcode = fetch();
@@ -54,7 +54,7 @@ void cpu::run() {
         if (elapsedTime < expectedTime) {
             std::this_thread::sleep_for(std::chrono::microseconds(expectedTime - elapsedTime)); // Delay to sync with real-time
         }
-    }
+   // }
 }
 
 // Fetches instruction from an address, returns the opcode, increments program counter

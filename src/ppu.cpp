@@ -1,5 +1,6 @@
 #include "PPU.h"
 #include "cpu.h"
+#include <SDL.h>
 
 void PPU::mirror(bool mirror) {
 	if (mirror) {
@@ -28,10 +29,10 @@ void PPU::getPatternTable(byte address) {
 // Here the Y is the row, X is the column within the tile specified
 // PT is which pattern table it's in
 
-int PPU::getPixelValue(bool PT, uint16_t tile_index, byte x, byte y) {
+int PPU::getPixelValue(byte PT, uint16_t tile_index, byte x, byte y) {
 
 	// Fetch base address of the tile
-	uint16_t baseAddress = tile_index * 16 + (PT ? 0x1000 : 0);
+	uint16_t baseAddress = tile_index * 16 + PT; //(PT ? 0x1000 : 0);
 
 	// Get upper and lower plane address
 	byte lPlane = ppuVRAM[baseAddress + y];
@@ -386,56 +387,87 @@ void PPU::clock() {
 		}
 
 		// At 256 it increments vert(v) as well
-		else if (PPUcycle > 0 && PPUcycle < 256 && scanline < 240) {
+		else if (PPUcycle > 0 && (PPUcycle <= 256 || PPUcycle >= 321) && scanline < 240) {
 			
 			switch (PPUcycle % 8) {
 					
 			case 0:
-				if ((VRAMaddress & 0x001F) == 31) {
-					VRAMaddress &= ~0x001F;
-					VRAMaddress ^= 0x0400;
+				if (PPUcycle == 256) {
+					incHorizontal();
+
+					if (PPUMASK.b || PPUMASK.s) {
+						incVertical();
+					}
+				}
+				localX = PTx % 4;
+				localY = PTy % 4;
+				quadrant;
+				if (localY < 2) {
+					quadrant = (localX < 2) ? TL : TR;
 				}
 				else {
-					VRAMaddress++;
+					quadrant = (localY < 2) ? BL : BR;
 				}
+				tileData = getPixelValue(NTS, tileID, PTx, PTy); 
+
+				colorIndex = ppuVRAM[0x3F00 + quadrant * 4 + tileData];
+
+				SDL_SetRenderDrawColor(renderer,
+					(pixelColors[0x00] >> 16) & 0xFF, // Red component
+					(pixelColors[0x00] >> 8) & 0xFF,  // Green component
+					pixelColors[0x00] & 0xFF,         // Blue component
+					SDL_ALPHA_OPAQUE);                // Full opacity
+
+				SDL_RenderDrawPoint(renderer, xCoarse * 8 + xFine, yCoarse * 8 + yFine);
+				SDL_RenderPresent(renderer); // Update screen with the rendering performed
+
+
+
+				incHorizontal();
 				break;
 
 			case 1:
 				break;
 
 			case 2:
-				tileID = ppuVRAM[VRAMaddress];
+				tileAddress = 0x2000 | (VRAMaddress & 0x0FFF);
+				tileID = ppuVRAM[tileAddress];
 				break;
 
 			case 3:
 				break;
 
 			case 4:
+				attributeAddress = 0x23C0 | (VRAMaddress & 0x0C00) | ((VRAMaddress >> 4) & 0x38) | ((VRAMaddress >> 2) & 0x07);
+				PTx = (attributeAddress >> 2) & 0x07;
+				PTy = (attributeAddress >> 4) & 0x07;
+				NTS = (attributeAddress >> 10) & 0x03;
+				attributeData = ppuVRAM[attributeAddress];
+				BR = attributeData >> 6;
+				BL = attributeData >> 4 & 0x03;
+				TR = attributeData >> 2 & 0x03;
+				TL = attributeData >> 0 & 0x03;
+				attributeData = BR << 6 | BL << 4 | TR << 2 | TL;
 				break;
 
 			case 5:
 				break;
 
 			case 6:
+				// tileDataLow = getPixelValue(NTS, tileID, PTx, PTy);
 				break;
 
 			case 7:
 				break;
 
-			case 8:
-				break;
-
 			}
 
 		}
+		else if (PPUcycle > 256 && PPUcycle < 321 && scanline < 240) {
 
-		else if (PPUcycle == 256) {
-			incHorizontal();
-
-			if (PPUMASK.b || PPUMASK.s) {
-				incVertical();
-			}
 		}
+
+
 
 	}
 
@@ -446,3 +478,4 @@ void PPU::clock() {
 
 	}
 }
+

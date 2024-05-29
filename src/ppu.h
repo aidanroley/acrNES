@@ -31,7 +31,7 @@ public:
 	std::vector<byte> ppuCHR;
 	void initializeCHRM0(const std::vector<uint8_t>& chr); // Might change this to vector since it should be 8KB, not yet.
 	void getPatternTable(byte address);
-	int getPixelValue(bool PT, uint16_t tile_index, byte x, byte y);
+	int getPixelValue(byte PT, uint16_t tile_index, byte x, byte y);
 
 	// PPU VRAM
 	byte ppuVRAM[0x4000]{ 0 };
@@ -205,6 +205,9 @@ public:
 	void incHorizontal();
 	void incVertical();
 
+	uint16_t tileAddress;
+	uint16_t attributeAddress;
+
 	byte dataBuffer;
 
 	void clock();
@@ -213,5 +216,23 @@ public:
 	void writePPUBus(uint16_t address, byte value);
 
 	int tileID;
+	byte attributeData;
+	byte PTx;
+	byte PTy;
+	byte NTS;
+
+	byte tileData;
+
+	byte BR;
+	byte BL;
+	byte TR;
+	byte TL;	
+	byte pixelColor;
+
+	int colorIndex;
+
+	int localY;
+	int localX;
+	int quadrant;
 };
 #endif
