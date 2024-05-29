@@ -19,7 +19,6 @@ void Emulator::start() {
 	int val = romMain.parseFile();
 	PPU->checkPpuBus();
 	PPU->InitializeColors();
-	
 	// The system
 	while (ok) {
 		SDL_RenderPresent(renderer);

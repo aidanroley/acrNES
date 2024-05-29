@@ -2,16 +2,18 @@
 #include "PPU.h"
 #include "Mapper00.h"
 
+
 Bus::Bus() : ppu(nullptr), mapper00(nullptr) {
     std::fill(std::begin(memory), std::end(memory), 0);
 
+    //Bus::connectPPU(ppu);
     // Optionally log that the bus has been initialized
     std::cout << "Bus initialized with zeroed memory and no connected PPU or Mapper." << std::endl;
 }
 
 
 void Bus::connectPPU(PPU* ppu) {
-    this->ppu = ppu;
+    ppu = PPU::getInstance();
 }
 void Bus::connectMapper00(Mapper00* mapper00) {
     this->mapper00 = mapper00;  
@@ -81,6 +83,7 @@ void Bus::storeTempValues(uint16_t operandAddress, byte operandValue, int cycleC
 }
 
 void Bus::busClock() {
+    ppu = PPU::getInstance();
     std::cout << "yeah" << std::endl;
     if (ppuCycles == 0) {
         // cpu->run();
@@ -89,6 +92,7 @@ void Bus::busClock() {
     }
     std::cout << "awesome sauce" << std::endl;
     ppu->clock();
+    std::cout << "okay man" << std::endl;
     ppuCycles++;
    
 

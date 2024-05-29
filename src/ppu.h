@@ -1,6 +1,7 @@
 #pragma once
 #ifndef PPU_H
 #define PPU_H
+// #include "singleton.h"
 #include <cstdint>
 #include <SDL.h>
 #include "bus.h"
@@ -24,7 +25,11 @@ public:
 		this->format = formatted;
 	}
 
-	// To make sure no new instances of Bus are created as that would create sync problems
+	// To make sure no 
+	// 
+	// 
+	// 
+	//  instances of Bus are created as that would create sync problems
 	Bus* bus = Bus::getInstance();
 
 	// Initialize CHR, transfer CHR data from Mapper to PPU
