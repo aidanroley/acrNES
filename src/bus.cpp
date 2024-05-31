@@ -1,9 +1,10 @@
 #include "bus.h"
 #include "PPU.h"
+#include "cpu.h"
 #include "Mapper00.h"
 
 
-Bus::Bus() : ppu(nullptr), mapper00(nullptr) {
+Bus::Bus() : ppu(nullptr), mapper00(nullptr), cpu(nullptr) {
     std::fill(std::begin(memory), std::end(memory), 0);
 
     //Bus::connectPPU(ppu);
@@ -25,9 +26,12 @@ uint8_t Bus::readBusCPU(uint16_t address) {
     }
     else if (address >= 0x2000 && address <= 0x3FFF) {
         uint16_t ppuRegister = address & 0x0007; // Mask to get PPU register
-       // return ppu->handlePPURead(ppuRegister);
+        return ppu->handlePPURead(ppuRegister);
     }
-    return 0xFF; // Default if not in handled ranges
+    else if (address >= 0x4017 && address <= 0xFFFF) {
+        return memory[address];
+    }
+    return 0x00; // Default if not in handled ranges
 }
 
 void Bus::writeBusCPU(uint16_t address, uint8_t data) {
@@ -36,7 +40,7 @@ void Bus::writeBusCPU(uint16_t address, uint8_t data) {
     }
     else if (address >= 0x2000 && address <= 0x3FFF) {
         uint16_t ppuRegister = address & 0x0007; // Mask to get PPU register
-       // ppu->handlePPUWrite(ppuRegister, data);
+        ppu->handlePPUWrite(ppuRegister, data);
     }
     else if (address == 0x4014) {
         ppu->handlePPUWrite(address, data);
@@ -68,14 +72,20 @@ void Bus::check() {
     }
 }
 
-uint16_t Bus::CpuPcStart(uint16_t pc) {
+uint16_t Bus::CpuPcStart() {
     // Handle starting position of CPU's PC
     lowPCStart = memory[0xFFFC];
     highPCStart = memory[0xFFFD];
     PCStart = (highPCStart << 8) | lowPCStart;
+    std::cout << "Low byte: " << std::hex << static_cast<int>(lowPCStart) << std::endl;
+    std::cout << "High byte: " << std::hex << static_cast<int>(highPCStart) << std::endl;
+    std::cout << "PCStart: " << std::hex << PCStart << std::endl;
     return PCStart;
 }
+void Bus::transferCycles(int cycleCount) {
+    cpuTempCycles = cycleCount;
 
+}
 void Bus::storeTempValues(uint16_t operandAddress, byte operandValue, int cycleCount) {
     cpuTempAddr = operandAddress;
     cpuTempData = operandValue;
@@ -83,23 +93,32 @@ void Bus::storeTempValues(uint16_t operandAddress, byte operandValue, int cycleC
 }
 
 void Bus::busClock() {
-    ppu = PPU::getInstance();
-    std::cout << "yeah" << std::endl;
+    if (ppuCycles == 9999999) {
+        ppuCycles = 3;
+    }
     if (ppuCycles == 0) {
-        // cpu->run();
-        std::cout << "yea" << std::endl;
+        ppu = PPU::getInstance();
+        cpu = cpu::getInstance();
+    }
+    
+    if (ppuCycles == 0) {
+        cpu->setPCStartup();
+        cpu->run();
         cpuCycles++;
     }
-    std::cout << "awesome sauce" << std::endl;
+    /*
     ppu->clock();
-    std::cout << "okay man" << std::endl;
+    std::cout << "PPU clocked" << std::endl;
     ppuCycles++;
+    */
    
-
+   //std::cout << " CPU TEMP CYCLES: " << cpuTempCycles << std::endl;
+    // std::cout << " PPU TEMP CYCLES: " << ppuCycles << std::endl;
     // PPU runs 3 times as fast as CPU
     if (cpuTempCycles == 0 && (ppuCycles % 3 == 0)) {
 
         cpu->run();
+       // std::cout << "CPU clocked" << std::endl;
         cpuCycles++;
     }
 
@@ -115,10 +134,13 @@ void Bus::busClock() {
     }
 
     ppu->clock();
+    // std::cout << "PPU clocked" << std::endl;
     ppuCycles++;
 
 
     // idk if I should decrement right after cpu run
-    cpuTempCycles--;
+    if (cpuTempCycles != 0) {
+        cpuTempCycles--;
+    }
 
 }

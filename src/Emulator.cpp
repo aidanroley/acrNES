@@ -8,23 +8,32 @@
 
 Emulator emulator;
 ROM romMain;
+
 int main(int argc, char* argv[]) {
-	emulator.SetUpDisplay();
-	emulator.start();
-
-	return 0;
-
+    emulator.SetUpDisplay();
+    if (!emulator.ok) {
+        return -1;
+    }
+    emulator.start();
+    return 0;
 }
+
 void Emulator::start() {
-	int val = romMain.parseFile();
-	PPU->checkPpuBus();
-	PPU->InitializeColors();
-	// The system
-	while (ok) {
-		SDL_RenderPresent(renderer);
-		bus->busClock();
+    int val = romMain.parseFile();
+    PPU->checkPpuBus();
+    PPU->InitializeColors();
 
+    SDL_Event e;
+    while (ok) {
+        while (SDL_PollEvent(&e) != 0) {
+            if (e.type == SDL_QUIT) {
+                ok = false;
+            }
+        }
+        // Example of setting a pixel
+        // SetPixel(100, 100, 0xFFFF0000); // Set pixel at (100, 100) to red
 
-	}
-	SDL_Quit();
+       // UpdateScreen();
+        bus->busClock();
+    }
 }

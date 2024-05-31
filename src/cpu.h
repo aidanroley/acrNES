@@ -5,7 +5,8 @@
 
 // typedef uint8_t byte;
 
-class cpu {
+class cpu : public Singleton<cpu> {
+    friend class Singleton<cpu>;
 private:
     Bus* bus = Bus::getInstance();
 
@@ -20,7 +21,7 @@ public:
 
     // 16-bit program counter; it points to the address at which next instruction will be fetched
     // The program counter may be read by pushing its value onto the stack  
-    uint16_t pc = 0x0400;
+    uint16_t pc;
 
     uint16_t absolute;
     uint16_t temp_addr;
@@ -123,7 +124,7 @@ public:
     OpcodeInfo{BVC, REL, 2, "50", "BVC"},
     OpcodeInfo{BVS, REL, 2, "70", "BVS"},
     OpcodeInfo{CLC, IMP, 2, "18", "CLC"},
-    OpcodeInfo{CLD, IMP, 2, "D8", "CLD"},
+    OpcodeInfo{CLD, IMP, 2, "d8", "CLD"},
     OpcodeInfo{CLI, IMP, 2, "58", "CLI"},
     OpcodeInfo{CLV, IMP, 2, "B8", "CLV"},
     OpcodeInfo{CMP, IMM, 2, "C9", "CMP"}, OpcodeInfo{CMP, ZERO, 3, "C5", "CMP"}, OpcodeInfo{CMP, ZEROX, 4, "D5", "CMP"}, OpcodeInfo{CMP, ABS, 4, "CD", "CMP"}, OpcodeInfo{CMP, ABSX, 4, "DD", "CMP"}, OpcodeInfo{CMP, ABSY, 4, "D9", "CMP"}, OpcodeInfo{CMP, INDX, 6, "C1", "CMP"}, OpcodeInfo{CMP, INDY, 5, "D1", "CMP"},
@@ -196,7 +197,7 @@ public:
     void interrupt();
     // Fetch instruction (or part of instruction)
     byte fetch();
-    void decodeAndExecute(byte instruction, int cycles, AddressingModes addressingMode);
+    void decodeAndExecute(byte instruction, int& cycles, AddressingModes addressingMode);
 
     //Read from binary file, load to memory
     void loadToMemory(const std::vector<byte>& data, uint16_t startAddress);
@@ -241,8 +242,14 @@ public:
     bool pageCrossed;
 
     uint16_t temppc;
+
+    void setPCStartup() {
+        pc = bus->CpuPcStart();
+    }
     
 };
+
+
 
 
 #endif // CPU_H

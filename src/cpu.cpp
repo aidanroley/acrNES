@@ -19,16 +19,16 @@ int mainCPU() {
 void cpu::run() {
     // loadIntelHexFile("C:/Users/Aidan/Downloads/functional.hex");
     // while (true) {
-    long startTime = cpu::getCurrentTime();
-        cycleCount = 0;
-        while (cycleCount < 1790000 / 60) { // 1790000 / 60
+    // long startTime = cpu::getCurrentTime();
+    std::cout << std::dec << pc << std::endl;
+            cycleCount = 0;
             byte opcode = fetch();
             printCount++;
            
             
-            if (printCount % 10000 == 0) {
-                std::cout << "Opcode: 0x" << std::hex << static_cast<int>(opcode) << " " << std::dec << printCount << std::endl;
-                std::cout << "Cycle: "<< std::dec << cycleCount << std::endl;
+            if (printCount <  25000) {
+               // std::cout << "Opcode: 0x" << std::hex << static_cast<int>(opcode) << " " << std::dec << printCount << std::endl;
+                // std::cout << "Cycle: "<< std::dec << cycleCount << std::endl;
             }
             
 
@@ -45,15 +45,18 @@ void cpu::run() {
                 }
             }
 
-
-            decodeAndExecute(instruction, cycles, addressingMode);
-        }
+//std::cout << cycles << std::endl;
+            decodeAndExecute(instruction, cycleCount, addressingMode);
+            bus->transferCycles(cycleCount);
+       // }
+        /*
         long endTime = getCurrentTime();
         long elapsedTime = endTime - startTime;
         long expectedTime = 1790000 / 60; // 1000000
         if (elapsedTime < expectedTime) {
             std::this_thread::sleep_for(std::chrono::microseconds(expectedTime - elapsedTime)); // Delay to sync with real-time
         }
+        */
    // }
 }
 
@@ -163,7 +166,7 @@ uint16_t cpu::INDYe() {
 }
 
 // I wrote a switch statement for each opcode instead of using lookup table
-void cpu::decodeAndExecute(byte instruction, int cycles, AddressingModes addressingMode) {
+void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes addressingMode) {
     byte operandValue = 0;
     uint16_t operandAddress = 0;
     if (addressingMode != ACC && addressingMode != IMP) {

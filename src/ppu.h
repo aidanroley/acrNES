@@ -13,6 +13,8 @@ private:
 
 	SDL_Renderer* renderer;
 	SDL_PixelFormat* format;
+	SDL_Texture* texture;
+	std::vector<uint32_t> pixelBuffer;
 	byte OAM[256]{ 0 };
 	uint16_t OAMstartAddr{ 0 };
 	int patternTable[0x2000];
@@ -20,16 +22,13 @@ private:
 public:
 
 	// Pass SDL components into the PPU class
-	void InitializeRenderer(SDL_Renderer* render, SDL_PixelFormat* formatted) {
+	void InitializeRenderer(SDL_Renderer* render, SDL_PixelFormat* formatted, SDL_Texture* text) {
 		this->renderer = render;
 		this->format = formatted;
+		this->texture = text;
 	}
 
-	// To make sure no 
-	// 
-	// 
-	// 
-	//  instances of Bus are created as that would create sync problems
+	// To make sure no instances of Bus are created as that would create sync problems
 	Bus* bus = Bus::getInstance();
 
 	// Initialize CHR, transfer CHR data from Mapper to PPU
@@ -111,7 +110,7 @@ public:
 	PPUREGISTERS registers;
 
 	// Handle read/write to PPU Registers
-	byte handlePPURead(uint16_t ppuRegister, byte value);
+	byte handlePPURead(uint16_t ppuRegister);
 	void handlePPUWrite(uint16_t ppuRegister, byte value);
 
 	// RGB values: https://www.nesdev.org/wiki
@@ -239,5 +238,18 @@ public:
 	int localY;
 	int localX;
 	int quadrant;
+
+	void UpdateScreen() {
+		SDL_UpdateTexture(texture, nullptr, pixelBuffer.data(), 256 * sizeof(uint32_t));
+		SDL_RenderClear(renderer);
+		SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+		SDL_RenderPresent(renderer);
+	}
+
+	void SetPixel(int x, int y, uint32_t color) {
+		if (x >= 0 && x < 256 && y >= 0 && y < 240) {
+			pixelBuffer[y * 256 + x] = color;
+		}
+	}
 };
 #endif

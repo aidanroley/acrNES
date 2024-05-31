@@ -92,7 +92,7 @@ void PPU::incVertical() {
 
 }
 
-byte PPU::handlePPURead(uint16_t ppuRegister, byte value) {
+byte PPU::handlePPURead(uint16_t ppuRegister) {
 	byte data = 0;
 	switch (ppuRegister) {
 
@@ -256,8 +256,9 @@ void PPU::checkPpuBus() {
 	for (const auto& value : ppuVRAM) {
 		std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(value) << " ";
 	}
-	SDL_RenderDrawPoint(renderer, 230, 200);
-	SDL_RenderPresent(renderer);	
+	pixelBuffer.resize(256 * 240);
+
+	 //SDL_RenderPresent(renderer);	
 }
 
 
@@ -352,7 +353,12 @@ void PPU::writePPUBus(uint16_t address, byte value) {
 
 void PPU::clock() {
 
+
 	if (scanline > -1 && scanline < 240 && PPUcycle == 257) {
+		//SetPixel(100, 100, 0xFFFF0000);
+		// SDL_RenderDrawPoint(renderer, 230, 200);
+		//UpdateScreen();
+		//std::cout << "updated screen" << std::endl;
 
 		horizontalTtoV();
 
@@ -411,7 +417,7 @@ void PPU::clock() {
 				tileData = getPixelValue(NTS, tileID, PTx, PTy); 
 
 				colorIndex = ppuVRAM[0x3F00 + quadrant * 4 + tileData];
-
+				/*
 				SDL_SetRenderDrawColor(renderer,
 					(pixelColors[0x00] >> 16) & 0xFF, // Red component
 					(pixelColors[0x00] >> 8) & 0xFF,  // Green component
@@ -420,6 +426,9 @@ void PPU::clock() {
 
 				SDL_RenderDrawPoint(renderer, xCoarse * 8 + xFine, yCoarse * 8 + yFine);
 				SDL_RenderPresent(renderer); // Update screen with the rendering performed
+				*/
+				// std::cout << std::hex << "Color index" << colorIndex << std::endl;
+				SetPixel(xCoarse * 8 + xFine, yCoarse * 8 + yFine, pixelColors[colorIndex]);
 
 
 
@@ -477,5 +486,22 @@ void PPU::clock() {
 		PPUSTATUS.V == true;
 
 	}
+
+	else if (PPUcycle == 340 && scanline != 260 ) {
+		if (scanline == 0) {
+			// std::cout << "PPU checkpoint" << scanline << std::endl;
+		}
+		PPUcycle = -1; // This is -1 because PPUcycle is incremented directly after this
+		scanline++;
+	}
+
+	else if (scanline == 260 && PPUcycle == 340) {
+		UpdateScreen();
+		// std::cout << "screen updated" << std::endl;
+		PPUcycle = -1;
+		scanline = -1;
+	}
+
+	PPUcycle++;
 }
 

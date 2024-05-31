@@ -38,7 +38,7 @@ public:
     void check();
 
     // For finding CPU's PC start location
-    uint16_t CpuPcStart(uint16_t pc);
+    uint16_t CpuPcStart();
     byte lowPCStart;
     byte highPCStart;
     uint16_t PCStart;
@@ -54,7 +54,7 @@ public:
     void busClock();
 
     // For cycles
-    int cpuTempCycles;
+    int cpuTempCycles = 0;
     byte cpuTempData;
     uint16_t cpuTempAddr;
     int ppuCycles = 0;
@@ -62,6 +62,8 @@ public:
     bool dontDecrement = false;
 
     void storeTempValues(uint16_t operandAddress, byte operandValue, int cycles);
+
+    void transferCycles(int cycleCount);
 };
 
 #endif // BUS_H
