@@ -74,13 +74,15 @@ void Bus::check() {
 
 uint16_t Bus::CpuPcStart() {
     // Handle starting position of CPU's PC
+    cpu->initAddressingModeHandlers();
     lowPCStart = memory[0xFFFC];
     highPCStart = memory[0xFFFD];
     PCStart = (highPCStart << 8) | lowPCStart;
     std::cout << "Low byte: " << std::hex << static_cast<int>(lowPCStart) << std::endl;
     std::cout << "High byte: " << std::hex << static_cast<int>(highPCStart) << std::endl;
     std::cout << "PCStart: " << std::hex << PCStart << std::endl;
-    return PCStart;
+    // return PCStart;
+    return 0xC000;
 }
 void Bus::transferCycles(int cycleCount) {
     cpuTempCycles = cycleCount;
@@ -90,6 +92,7 @@ void Bus::storeTempValues(uint16_t operandAddress, byte operandValue, int cycleC
     cpuTempAddr = operandAddress;
     cpuTempData = operandValue;
     cpuTempCycles = cycleCount;
+    write = true;
 }
 
 void Bus::busClock() {
@@ -123,7 +126,7 @@ void Bus::busClock() {
     }
 
     // Only write to it when its one cycle from being done
-    else if (cpuTempCycles == 1) {
+    else if (cpuTempCycles == 1 && write) {
 
         writeBusCPU(cpuTempAddr, cpuTempData);
     }

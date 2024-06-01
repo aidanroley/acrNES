@@ -14,20 +14,21 @@ int mainCPU() {
     cpu myCpu;
     myCpu.run(); // Start the CPU emulation
     return 0; // Return success
-}
+}   
 
 void cpu::run() {
     // loadIntelHexFile("C:/Users/Aidan/Downloads/functional.hex");
     // while (true) {
     // long startTime = cpu::getCurrentTime();
-    std::cout << std::dec << pc << std::endl;
+ 
             cycleCount = 0;
             byte opcode = fetch();
             printCount++;
            
             
-            if (printCount <  25000) {
-               // std::cout << "Opcode: 0x" << std::hex << static_cast<int>(opcode) << " " << std::dec << printCount << std::endl;
+            if (printCount <  250) {
+               std::cout << "Opcode: 0x" << std::hex << static_cast<int>(opcode) << " " << std::dec << printCount << std::endl;
+               std::cout << std::dec << pc << std::endl;
                 // std::cout << "Cycle: "<< std::dec << cycleCount << std::endl;
             }
             
@@ -44,6 +45,7 @@ void cpu::run() {
                     break;
                 }
             }
+            // std::cout << std::dec << cycleCount << std::endl;
 
 //std::cout << cycles << std::endl;
             decodeAndExecute(instruction, cycleCount, addressingMode);
@@ -332,7 +334,10 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
         pc++;
         pushByteToStack((pc >> 8) & 0xFF);
         pushByteToStack(pc & 0xFF);
-        pushByteToStack(status | flags::B);
+        status |= flags::B;
+        pushByteToStack(status);
+        status &= ~flags::B;
+        pc = (bus->readBusCPU(0xFFFE) | (bus->readBusCPU(0xFFFF) << 8));
         break;
 
         // Branch if Overflow Clear
@@ -585,7 +590,7 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Jump
     case JMP:
-        pc = operandValue;
+        pc = operandAddress;
         break;
 
         // Jump to Subroutine
@@ -785,10 +790,10 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
         newStatusRTI = pop();
         // newStatusRTI = (newStatusRTI & ~flags::B & ~flags::U) | (status & (flags::B | flags::U)); IDK if i need this line
         status = newStatusRTI;
-        break;
         RTIlow = pop();
         RTIhigh = pop();
         pc = (RTIhigh << 8) | RTIlow;
+        break;
 
         // Return from Subroutine
     case RTS:

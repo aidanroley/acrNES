@@ -64,6 +64,8 @@ public:
     void storeTempValues(uint16_t operandAddress, byte operandValue, int cycles);
 
     void transferCycles(int cycleCount);
+
+    bool write = false;
 };
 
 #endif // BUS_H
