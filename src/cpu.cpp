@@ -27,9 +27,8 @@ void cpu::run() {
            
             
             if (printCount <  250) {
-               std::cout << "Opcode: 0x" << std::hex << static_cast<int>(opcode) << " " << std::dec << printCount << std::endl;
-               std::cout << std::dec << pc << std::endl;
-                // std::cout << "Cycle: "<< std::dec << cycleCount << std::endl;
+                std::cout << "Opcode: 0x" << std::hex << static_cast<int>(opcode) << " " << std::dec << printCount << " ";
+;                // std::cout << "Cycle: "<< std::dec << cycleCount << std::endl;
             }
             
 
@@ -65,6 +64,16 @@ void cpu::run() {
 // Fetches instruction from an address, returns the opcode, increments program counter
 byte cpu::fetch() {
     byte opcode = bus->readBusCPU(pc);
+    if (printCount < 250) {
+
+        std::cout << "pc: " << std::hex << pc << " ";
+        std::cout << "A: " << std::hex << static_cast<int>(a) << " ";
+        std::cout << "X: " << std::hex << static_cast<int>(x) << " ";
+        std::cout << "Y: " << std::hex << static_cast<int>(y) << std::endl;
+
+
+
+    }
     pc++;
     return opcode;
 }
@@ -232,7 +241,7 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
     case BCC:
         if (!(status & flags::C)) {
             cycleCount++;
-            int8_t signedOffset = static_cast<int8_t>(operandValue);
+            int8_t signedOffset = static_cast<int8_t>(operandAddress);
             temppc = pc + signedOffset;
             if ((pc & 0xFF00) != (temppc & 0xFF00)) {
                 cycleCount++;
@@ -245,7 +254,7 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
     case BCS:
         if (status & flags::C) {
             cycleCount++;
-            int8_t signedOffset = static_cast<int8_t>(operandValue);
+            int8_t signedOffset = static_cast<int8_t>(operandAddress);
             temppc = pc + signedOffset;
             if ((pc & 0xFF00) != (temppc & 0xFF00)) {
                 cycleCount++;
@@ -258,7 +267,7 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
     case BEQ:
         if (status & flags::Z) {
             cycleCount++;
-            int8_t signedOffset = static_cast<int8_t>(operandValue);
+            int8_t signedOffset = static_cast<int8_t>(operandAddress);
             temppc = pc + signedOffset;
             if ((pc & 0xFF00) != (temppc & 0xFF00)) {
                 cycleCount++;
