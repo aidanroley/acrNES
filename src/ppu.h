@@ -58,12 +58,12 @@ public:
 
 	// Flags for PPUCTRL
 	struct PPUCTRL {
-		bool V; // 7: Generate NMI at start of vertical blanking (0: off, 1: on) 
-		bool P; // 6: PPU master/slave select (0: read backdrop from pins, 1: output color on pins)
-		bool H; // 5: Sprite size (0: 8x8 pixels, 1: 8x16 pixels)
-		bool B; // 4: Background pattern table address (0: $0000, 1: $1000)
-		bool S; // 3: Sprite pattern table address for 8x8 sprites (0: $0000; 1: $1000; ignored in 8x16 mode)
-		bool I; // 2: VRAM address increment per CPU read/write of PPUDATA (0: add 1, going across; 1: add 32, going down)
+		bool V = 0; // 7: Generate NMI at start of vertical blanking (0: off, 1: on) 
+		bool P = 0; // 6: PPU master/slave select (0: read backdrop from pins, 1: output color on pins)
+		bool H = 0; // 5: Sprite size (0: 8x8 pixels, 1: 8x16 pixels)
+		bool B = 0; // 4: Background pattern table address (0: $0000, 1: $1000)
+		bool S = 0; // 3: Sprite pattern table address for 8x8 sprites (0: $0000; 1: $1000; ignored in 8x16 mode)
+		bool I = 0; // 2: VRAM address increment per CPU read/write of PPUDATA (0: add 1, going across; 1: add 32, going down)
 		byte NN : 2; // 1 | 0: Base nametable address (0 = $2000; 1 = $2400; 2 = $2800; 3 = $2C00)
 	};
 	PPUCTRL PPUCTRL;
@@ -71,28 +71,28 @@ public:
 
 	// Flags for PPUMASK
 	struct PPUMASK {
-		bool Blue; // 7: Emphasize blue
-		bool Green; // 6: Emphasize green
-		bool Red; // 5: Emphasize red
-		bool s; // 4: Show sprites
-		bool b; // 3: Show background
-		bool M; // 2: (1: Show sprites in leftmost 8 pixels of the screen, 0: Hide)
-		bool m; // 1: (1: Show background in leftmost 8 pixels of screen, 0: Hide)
-		bool Greyscale; // 0: Greyscale (0: normal color, 1: produce a greyscale display)
+		bool Blue = 0; // 7: Emphasize blue
+		bool Green = 0; // 6: Emphasize green
+		bool Red = 0; // 5: Emphasize red
+		bool s = 0; // 4: Show sprites
+		bool b = 0; // 3: Show background
+		bool M = 0; // 2: (1: Show sprites in leftmost 8 pixels of the screen, 0: Hide)
+		bool m = 0; // 1: (1: Show background in leftmost 8 pixels of screen, 0: Hide)
+		bool Greyscale = 0; // 0: Greyscale (0: normal color, 1: produce a greyscale display)
 	};
 	PPUMASK PPUMASK;
 
 	// Flags for PPUSTATUS
 	struct PPUSTATUS {
-		bool V; // Vertical blank has started
-		bool S; // Sprite 0 hit
-		bool O; // Sprite overflow but its buggy in the NES
+		bool V = 0; // Vertical blank has started
+		bool S = 0; // Sprite 0 hit
+		bool O = 1; // Sprite overflow but its buggy in the NES
 	};
 	PPUSTATUS PPUSTATUS;
 
 	struct PPUADDR {
-		byte lower;
-		byte upper;
+		byte lower = 0;
+		byte upper = 0;
 	};
 	PPUADDR PPUADDR;
 	uint16_t VRAMaddress;
@@ -101,7 +101,7 @@ public:
 
 	// PPU internal registers
 	struct PPUREGISTERS {
-		bool w; // SCROLL and ADDR share this register for writing
+		bool w = 0; // SCROLL and ADDR share this register for writing
 		uint16_t v; // Current VRAM addr
 		uint16_t t; // Temp VRAM addr
 		byte x; // Fine scroll

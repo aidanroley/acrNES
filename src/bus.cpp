@@ -81,8 +81,8 @@ uint16_t Bus::CpuPcStart() {
     std::cout << "Low byte: " << std::hex << static_cast<int>(lowPCStart) << std::endl;
     std::cout << "High byte: " << std::hex << static_cast<int>(highPCStart) << std::endl;
     std::cout << "PCStart: " << std::hex << PCStart << std::endl;
-    // return PCStart;
-    return 0xC000;
+    return PCStart;
+    //return 0xC000;
 }
 void Bus::transferCycles(int cycleCount) {
     cpuTempCycles = cycleCount;

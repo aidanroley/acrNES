@@ -17,7 +17,7 @@ public:
     ~cpu();
 
     // 8-bit accumulators, status register, stack pointer
-    byte a = 0, x = 0, y = 0, status = 0, stackpt = 0xFF;
+    byte a = 0, x = 0, y = 0, status = 0, stackpt = 0xFD;
 
     // 16-bit program counter; it points to the address at which next instruction will be fetched
     // The program counter may be read by pushing its value onto the stack  
@@ -27,7 +27,7 @@ public:
     uint16_t temp_addr;
     byte operand;
     byte zeroPageAddr;
-    byte relative;
+    int8_t relative;
     uint16_t jump; uint16_t tempjump;
 
 
@@ -53,7 +53,7 @@ public:
     byte ZEROe();
     byte ZEROXe();
     byte ZEROYe();
-    byte RELe();
+    int8_t RELe();
     uint16_t ABSe();
     uint16_t ABSXe();
     uint16_t ABSYe();
@@ -179,7 +179,7 @@ public:
             {AddressingModes::ZERO, [this]() { return static_cast<uint16_t>(ZEROe()); }},
             {AddressingModes::ZEROX, [this]() { return static_cast<uint16_t>(ZEROXe()); }},
             {AddressingModes::ZEROY, [this]() { return static_cast<uint16_t>(ZEROYe()); }},
-            {AddressingModes::REL, [this]() { return static_cast<uint16_t>(RELe()); }}, // Note: Example assumes false for condition
+            // {AddressingModes::REL, [this]() { return static_cast<int8_t>(RELe()); }}, // Note: Example assumes false for condition
             {AddressingModes::ABS, [this]() { return ABSe(); }},
             {AddressingModes::ABSX, [this]() { return ABSXe(); }},
             {AddressingModes::ABSY, [this]() { return ABSYe(); }},
@@ -189,7 +189,7 @@ public:
 
         };
     }
-
+    int8_t relAddr;
 
     // Main Loop
     void run();
@@ -230,9 +230,9 @@ public:
     byte RTShigh;
     byte RTSlow;
     byte newStatusRTI;
-    unsigned int effectiveValue;
-    unsigned int difference;
-
+    byte effectiveValue;
+    byte difference;
+    uint16_t tempAddr;
     int printCount = 0;
     int pc2 = 0;
 
