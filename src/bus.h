@@ -66,6 +66,10 @@ public:
     void transferCycles(int cycleCount);
 
     bool write = false;
+
+    bool nmi = false;
+
+    void transferNMI();
 };
 
 #endif // BUS_H

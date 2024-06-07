@@ -4,11 +4,11 @@
 
 void PPU::mirror(bool mirror) {
 	if (mirror) {
-		horizontal = true;
+		vertical = true;
 		std::cout << "horizontal" << std::endl;
 	}
 	else {
-		vertical = true;
+		horizontal = true;
 		std::cout << "vertical" << std::endl;
 	}
 
@@ -35,8 +35,8 @@ int PPU::getPixelValue(byte PT, uint16_t tile_index, byte x, byte y) {
 	uint16_t baseAddress = tile_index * 16 + PT; //(PT ? 0x1000 : 0);
 
 	// Get upper and lower plane address
-	byte lPlane = ppuVRAM[baseAddress + y];
-	byte uPlane = ppuVRAM[baseAddress + y + 8];
+	byte lPlane = readPPUBus(baseAddress + y); // ppuVRAM[baseAddress + y];
+	byte uPlane = readPPUBus(baseAddress + y + 8); // ppuVRAM[baseAddress + y + 8];
 
 	// Get column of the bit corresponding to pixel (x)
 	byte bit0 = (lPlane >> (7 - x)) & 1;
@@ -49,50 +49,61 @@ int PPU::getPixelValue(byte PT, uint16_t tile_index, byte x, byte y) {
 }
 
 void PPU::horizontalTtoV() {
-	 VRAMaddress = (VRAMaddress & 0x7BE0) | (registers.t & 0x041F);
+	if (PPUMASK.b) {
+		VRAMaddress = (VRAMaddress & 0x7BE0) | (registers.t & 0x041F);
+	}
 
 }
 
 void PPU:: verticalTtoV() {
-	VRAMaddress = (VRAMaddress & 0x041F) | (registers.t & 0x7BE0);
+	if (PPUMASK.b) {
+		VRAMaddress = (VRAMaddress & 0x041F) | (registers.t & 0x7BE0);
+	}
 	
 
 }
 
 void PPU::incHorizontal() {
-	if ((VRAMaddress & 0x001F) == 31) {
-		VRAMaddress &= ~0x001F;
-		VRAMaddress ^= 0x0400;
-	}
-	else {
-		VRAMaddress++;
+	if (PPUMASK.b) {
+		if ((VRAMaddress & 0x001F) == 31) {
+			VRAMaddress &= ~0x001F;
+			VRAMaddress ^= 0x0400;
+		}
+		else {
+			VRAMaddress++;
+		}
 	}
 
 }
 
 void PPU::incVertical() {
-	if ((VRAMaddress & 0x7000) != 0x7000) {
-		VRAMaddress += 0x1000;
-	}
-	else {
-		VRAMaddress &= ~0x7000;
-		yCoarse = (VRAMaddress & 0x03E0) >> 5;
-		if (yCoarse == 29) {
-			yCoarse = 0;
-			VRAMaddress ^= 0x8000;
-		}
-		else if (yCoarse == 31) {
-			yCoarse = 0;
+	if (PPUMASK.b) {
+		// std::cout << "VRAMADDRESS" << VRAMaddress << std::endl;
+		if ((VRAMaddress & 0x7000) != 0x7000) {
+			VRAMaddress += 0x1000;
 		}
 		else {
-			yCoarse += 1;
+			VRAMaddress &= ~0x7000;
+			yCoarse = (VRAMaddress & 0x03E0) >> 5;
+			if (yCoarse == 29) {
+				yCoarse = 0;
+				VRAMaddress ^= 0x8000;
+			}
+			else if (yCoarse == 31) {
+				yCoarse = 0;
+			}
+			else {
+				yCoarse += 1;
+			}
+			VRAMaddress = (VRAMaddress & ~0x03E0) | (yCoarse << 5);
 		}
-		VRAMaddress = (VRAMaddress & ~0x03E0) | (yCoarse << 5);
 	}
 
 }
 
 byte PPU::handlePPURead(uint16_t ppuRegister) {
+	//std::cout << "oops" << std::endl;
+	//std::cout << ppuRegister << std::endl;
 	byte data = 0;
 	switch (ppuRegister) {
 
@@ -106,8 +117,21 @@ byte PPU::handlePPURead(uint16_t ppuRegister) {
 
 	// PPUSTATUS
 	case 0x2002:
+		//std::cout << "what" << std::endl;
 		// Add here later maybe
+		if (PPUSTATUS.V) {
+			// std::cout << "GOOD!" << std::endl;
+			data |= (1 << 7);  // Set bit 7
+
+		}
+		if (PPUSTATUS.S) {
+			data |= (1 << 6);  // Set bit 6
+		}
+		if (PPUSTATUS.O) {
+			data |= (1 << 5);  // Set bit 5
+		}
 		PPUSTATUS.V = 0;
+		registers.w = 0; // fix this later
 		break;
 
 	// OAMADDR
@@ -129,12 +153,13 @@ byte PPU::handlePPURead(uint16_t ppuRegister) {
 
 	// PPUDATA
 	case 0x2007:
+		// std::cout << "THIS CANNOT BE OVER 3FFF" << std::hex << VRAMaddress << std::endl;
 		data = dataBuffer;
-		dataBuffer = ppuVRAM[VRAMaddress];
+		dataBuffer = readPPUBus(VRAMaddress); //ppuVRAM[VRAMaddress];
 
 		// Buffer not needed for palette memory
 		if (VRAMaddress > 0x3EFF) {
-			data = ppuVRAM[VRAMaddress];
+			data = readPPUBus(VRAMaddress); // ppuVRAM[VRAMaddress];
 		}
 
 		VRAMaddress += (PPUCTRL.I == 0 ? 1 : 32);
@@ -159,12 +184,10 @@ void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
 		PPUCTRL.NN = value & 0x03;
 
 		// Change nametable address based on NN flag
-		switch (PPUCTRL.NN) {
-		case 0: TempNametableAddr = 0x2000; break;
-		case 1: TempNametableAddr = 0x2400; break;
-		case 2: TempNametableAddr = 0x2800; break;
-		case 3: TempNametableAddr = 0x2C00; break;
-		}
+		registers.t = (registers.t & ~(0x03 << 10)) | (PPUCTRL.NN << 10);
+
+		//std::cout << "PPU CTRL VALUE " << std::hex << static_cast<int>(value) << std::endl;
+		//std::cout << "NMI ON VbLANK ? " << PPUCTRL.V << std::endl;
 		break;
 	
 		// PPUMASK
@@ -177,6 +200,9 @@ void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
 		PPUMASK.M = (value >> 2) & 1;
 		PPUMASK.m = (value >> 1) & 1;
 		PPUMASK.Greyscale = (value >> 0) & 1;
+
+		//std::cout << "PPU MASK VALUE " << std::hex << static_cast<int>(value) << std::endl;
+		//std::cout << "BG ENABLED? " << PPUMASK.b << std::endl;
 
 		break;
 
@@ -216,19 +242,34 @@ void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
 
 		// PPUADDR
 	case 0x2006:
+		 
 		if (registers.w == 0) {
-			PPUADDR.upper = value;
+			/*
+			std::cout << "PPUCYCLE: " << std::dec << static_cast<int>(bus->ppuCycles) << std::hex << std::endl;
+			std::cout << "UPPER: " << static_cast<int>(value) << std::endl; 
+			*/
+			PPUADDR.upper = value & 0x3F;
 			registers.w = 1;
 		}
 		else {
+			//std::cout << "PPUCYCLE: " << std::dec << static_cast<int>(bus->ppuCycles) << std::hex << std::endl;
+			//std::cout << "LOWER: " << static_cast<int>(value) << std::endl;
 			PPUADDR.lower = value;
-			VRAMaddress = ((PPUADDR.upper << 8) | PPUADDR.lower) & 0x3FFF;
+			//std::cout << "CONCATENATED: " << static_cast<int>(((PPUADDR.upper << 8) | PPUADDR.lower)) << std::endl;
+			VRAMaddress = (((PPUADDR.upper << 8) & 0xFF00) | PPUADDR.lower);
 			registers.w = 0;
 		}
 		break;
-
+		
 		// PPUDATA
 	case 0x2007:
+	/*
+			std::cout << "2007 CALLED VALUE: " << std::hex << static_cast<int>(value) << " ADDRess: " << std::hex << VRAMaddress << std::endl;
+			std::cout << "PPUcycleTotal" << std::dec << static_cast<int>(bus->ppuCycles) << std::endl;
+			std::cout << "ppucycle/scanline" << std::dec << static_cast<int>(PPUcycle) << " / " << static_cast<int>(scanline) << std::endl;
+			*/
+			
+		
 		writePPUBus(VRAMaddress, value); // ppuVRAM[VRAMaddress] = value;
 		VRAMaddress += (PPUCTRL.I == 0 ? 1 : 32);
 		VRAMaddress & 0x3FFF;
@@ -254,7 +295,7 @@ void PPU::writeOAM(byte address, byte value) {
 void PPU::checkPpuBus() {
 	std::cout << "CHR PLEASE WORK!!!!" << std::endl;
 	for (const auto& value : ppuVRAM) {
-		std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(value) << " ";
+			 std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(value) << " ";
 	}
 	pixelBuffer.resize(256 * 240);
 
@@ -351,10 +392,33 @@ void PPU::writePPUBus(uint16_t address, byte value) {
 
 }
 
+byte PPU::readPPUBus(uint16_t address) {
+	if (address >= 0x3F20 && address <= 0x3FFF) {
+		address = (address & 0x001F) | 0x3F00;
+
+	}
+	else if (address == 0x3F10) {
+		address == 0x3F00;
+	}
+	else if (address == 0x3F14) {
+		address == 0x3F04;
+	}
+	else if (address == 0x3F18) {
+		address == 0x3F08;
+	}
+	else if (address == 0x3F1C) {
+		address == 0x3F0C;
+	}
+	return ppuVRAM[address];
+}
+
 void PPU::clock() {
+	if (VRAMaddress > 0x1E) {
+		//std::cout << "BAD" << std::dec << PPUcycle << std::hex << VRAMaddress << std::endl;
+	}
 
 
-	if (scanline > -1 && scanline < 240 && PPUcycle == 257) {
+	if (scanline > -1 && scanline < 240 && PPUcycle == 257 && PPUMASK.b) {
 		//SetPixel(100, 100, 0xFFFF0000);
 		// SDL_RenderDrawPoint(renderer, 230, 200);
 		//UpdateScreen();
@@ -375,7 +439,7 @@ void PPU::clock() {
 			PPUSTATUS.S = false;
 		}
 
-		else if (scanline == -1 && PPUcycle >= 280 && PPUcycle <= 304) {
+		else if (scanline == -1 && PPUcycle >= 280 && PPUcycle <= 304 && PPUMASK.b) {
 
 			verticalTtoV();
 			
@@ -407,7 +471,7 @@ void PPU::clock() {
 				}
 				localX = PTx % 4;
 				localY = PTy % 4;
-				quadrant;
+
 				if (localY < 2) {
 					quadrant = (localX < 2) ? TL : TR;
 				}
@@ -416,7 +480,7 @@ void PPU::clock() {
 				}
 				tileData = getPixelValue(NTS, tileID, PTx, PTy); 
 
-				colorIndex = ppuVRAM[0x3F00 + quadrant * 4 + tileData];
+				colorIndex = readPPUBus(0x3F00 + quadrant * 4 + tileData);// ppuVRAM[0x3F00 + quadrant * 4 + tileData];
 				/*
 				SDL_SetRenderDrawColor(renderer,
 					(pixelColors[0x00] >> 16) & 0xFF, // Red component
@@ -428,19 +492,44 @@ void PPU::clock() {
 				SDL_RenderPresent(renderer); // Update screen with the rendering performed
 				*/
 				// std::cout << std::hex << "Color index" << colorIndex << std::endl;
-				SetPixel(xCoarse * 8 + xFine, yCoarse * 8 + yFine, pixelColors[colorIndex]);
 
+				xF = VRAMaddress & 0x07;
+
+				SetPixel((VRAMaddress & 0x1F) * 8 + xFine, yCoarse * 8 + ((VRAMaddress >> 12) & 0x07), pixelColors[colorIndex]);
+				if (PPUMASK.b) {
+					std::cout << "VRAM ADDR" << std::hex << static_cast<int>(VRAMaddress) << std::endl;
+					std::cout << "so close" << std::dec << static_cast<int>((VRAMaddress & 0x1F) * 8 + xF) << "XF" << static_cast<int>(xF) << std::hex << std::endl;
+					
+				}
+				
+				if (printDebug && tileID != 0) {
+					ok++;
+					std::cout << "VRAM ADDR " << (VRAMaddress & 0x0FFF) << " COUNT " << std::dec << ok << "CYCLE " << PPUcycle << std::hex << std::endl;
+					std::cout << "x coarse" << ((VRAMaddress) & 0x1F) << std::endl;
+					std::cout << "y coarse" << (yCoarse) << std::endl;
+					std::cout << "COLOR INDEx " << colorIndex << std::endl;
+					std::cout << "TILE ADDRESS: " << tileAddress << std::endl;
+					std::cout << "TILE ID: " << tileID << std::endl;
+				}
+				
+				
 
 
 				incHorizontal();
 				break;
 
 			case 1:
+				patternLow = (patternLow & 0xFF00) | nextTileLow;
+				patternHigh = (patternHigh & 0xFF00) | nextTileHigh;
+				attributeLow = (attributeLow & 0xFF00) | ((nextTileAttribute & 0b01) ? 0xFF : 0x00);
+				attributeLow = (attributeLow & 0xFF00) | ((nextTileAttribute & 0b01? 0xFF : 0x00);
 				break;
 
 			case 2:
 				tileAddress = 0x2000 | (VRAMaddress & 0x0FFF);
-				tileID = ppuVRAM[tileAddress];
+				//std::cout << "tile address" << std::hex << tileAddress << std::endl;
+				//std::cout << "tile ID" << tileID << std::endl;
+				nextTileID = readPPUBus(tileAddress); // ppuVRAM[tileAddress];
 				break;
 
 			case 3:
@@ -448,15 +537,26 @@ void PPU::clock() {
 
 			case 4:
 				attributeAddress = 0x23C0 | (VRAMaddress & 0x0C00) | ((VRAMaddress >> 4) & 0x38) | ((VRAMaddress >> 2) & 0x07);
+				if (PPUMASK.b) {
+					std::cout << "VRAM ADDR " << std::hex << static_cast<int>(VRAMaddress) << std::endl;
+					std::cout << "attribute address " << std::hex << static_cast<int>(attributeAddress) << std::endl;
+				}
 				PTx = (attributeAddress >> 2) & 0x07;
 				PTy = (attributeAddress >> 4) & 0x07;
 				NTS = (attributeAddress >> 10) & 0x03;
-				attributeData = ppuVRAM[attributeAddress];
+				if (PPUMASK.b) {
+					std::cout << "PTx: " << std::hex << static_cast<int>(PTx) << std::endl;
+					std::cout << "PTy: " << std::hex << static_cast<int>(PTy) << std::endl;
+					std::cout << "NTS: " << std::hex << static_cast<int>(NTS) << std::endl;
+				}
+				attributeData = readPPUBus(attributeAddress); // ppuVRAM[attributeAddress];
+				//std::cout << "attribute data " << std::hex << static_cast<int>(attributeData) << std::endl;
 				BR = attributeData >> 6;
 				BL = attributeData >> 4 & 0x03;
 				TR = attributeData >> 2 & 0x03;
 				TL = attributeData >> 0 & 0x03;
 				attributeData = BR << 6 | BL << 4 | TR << 2 | TL;
+				
 				break;
 
 			case 5:
@@ -483,7 +583,10 @@ void PPU::clock() {
 	// Vertical blank has started
 	if (scanline == 241 && PPUcycle == 1) {
 
-		PPUSTATUS.V == true;
+		PPUSTATUS.V = true;
+		if (PPUCTRL.V) {
+			bus->transferNMI();
+		}
 
 	}
 
@@ -498,8 +601,9 @@ void PPU::clock() {
 	else if (scanline == 260 && PPUcycle == 340) {
 		UpdateScreen();
 		// std::cout << "screen updated" << std::endl;
-		PPUcycle = -1;
+		PPUcycle = 0;
 		scanline = -1;
+		printDebug = false;
 	}
 
 	PPUcycle++;

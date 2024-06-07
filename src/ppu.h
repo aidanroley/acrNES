@@ -63,7 +63,7 @@ public:
 		bool H = 0; // 5: Sprite size (0: 8x8 pixels, 1: 8x16 pixels)
 		bool B = 0; // 4: Background pattern table address (0: $0000, 1: $1000)
 		bool S = 0; // 3: Sprite pattern table address for 8x8 sprites (0: $0000; 1: $1000; ignored in 8x16 mode)
-		bool I = 0; // 2: VRAM address increment per CPU read/write of PPUDATA (0: add 1, going across; 1: add 32, going down)
+		bool I = 1; // 2: VRAM address increment per CPU read/write of PPUDATA (0: add 1, going across; 1: add 32, going down)
 		byte NN : 2; // 1 | 0: Base nametable address (0 = $2000; 1 = $2400; 2 = $2800; 3 = $2C00)
 	};
 	PPUCTRL PPUCTRL;
@@ -84,18 +84,20 @@ public:
 
 	// Flags for PPUSTATUS
 	struct PPUSTATUS {
-		bool V = 0; // Vertical blank has started
+		bool V = true; // Vertical blank has started
 		bool S = 0; // Sprite 0 hit
-		bool O = 1; // Sprite overflow but its buggy in the NES
+		bool O = true; // Sprite overflow but its buggy in the NES
 	};
 	PPUSTATUS PPUSTATUS;
 
 	struct PPUADDR {
-		byte lower = 0;
-		byte upper = 0;
+		uint16_t lower = 0;
+		uint16_t upper = 0;
 	};
 	PPUADDR PPUADDR;
-	uint16_t VRAMaddress;
+	uint16_t VRAMaddress = 0;
+
+	bool printDebug = true;
 
 	byte OAMAddr = 0;
 
@@ -190,6 +192,8 @@ public:
 	bool OddFrame;
 	bool enableRendering;
 
+	int ok = 0;
+
 	// For nametables, coarse is tile position, fine is pixel position.
 	// Tiles are 32 horizontally, 30 vertically.
 	// Pixels are 8x8 in each tile.
@@ -238,6 +242,19 @@ public:
 	int localY;
 	int localX;
 	int quadrant;
+
+	byte xF;
+
+	// Shifters
+	byte nextTileID;
+	byte nextTileAttribute;
+	byte nextTileLow;
+	byte nextTileHigh;
+	uint16_t patternLow;
+	uint16_t patternHigh;
+	uint16_t attributeLow;
+	uint16_t attributeHigh;
+
 
 	void UpdateScreen() {
 		SDL_UpdateTexture(texture, nullptr, pixelBuffer.data(), 256 * sizeof(uint32_t));

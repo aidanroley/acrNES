@@ -23,13 +23,15 @@ void cpu::run() {
  
             cycleCount = 0;
             byte opcode = fetch();
+            
             printCount++;
            
             
-            if (printCount <  1000) {
+            if (bus->ppuCycles > 34962066) {
                 std::cout << "Opcode: 0x" << std::hex << static_cast<int>(opcode) << " " << std::dec << printCount << std::endl;
-;                // std::cout << "Cycle: "<< std::dec << cycleCount << std::endl;
+;                 //std::cout << "Cycle: "<< std::dec << cycleCount << std::endl;
             }
+            
             
 
             // Converts hexadecimal to string for readability
@@ -44,7 +46,7 @@ void cpu::run() {
                     break;
                 }
             }
-            // std::cout << std::dec << cycleCount << std::endl;
+            //std::cout << std::dec << cycleCount << std::endl;
 
 //std::cout << cycles << std::endl;
             decodeAndExecute(instruction, cycleCount, addressingMode);
@@ -64,13 +66,19 @@ void cpu::run() {
 // Fetches instruction from an address, returns the opcode, increments program counter
 byte cpu::fetch() {
     byte opcode = bus->readBusCPU(pc);
-    if (printCount < 1000) {
+    //if (pc == 0xc013 || pc == 0xc03d || pc == 0xc054 || pc == 0xc306 || pc == 0xc2e2 || pc == 0xc285) {
+       // printCount = 100;
+   // }
+    if (pc == 0xc013) {
+        printCount = 1;
+    }
+    if (bus->ppuCycles > 34962099) {
 
         std::cout << "pc: " << std::hex << pc << " ";
         std::cout << "A: " << std::hex << static_cast<int>(a) << " ";
         std::cout << "X: " << std::hex << static_cast<int>(x) << " ";
         std::cout << "Y: " << std::hex << static_cast<int>(y) << " ";
-        std::cout << "P: " << std::hex << static_cast<int>((status & ~0x04) + 0x24) << " ";
+        std::cout << "P: " << std::dec << static_cast<int>((status & ~0x04) + 0x24) << " ";
         std::cout << "SP:: " << std::hex << static_cast<int>(stackpt) << " ";
 
 
@@ -78,6 +86,43 @@ byte cpu::fetch() {
     }
     pc++;
     return opcode;
+}
+
+// Interrupts
+
+void cpu::nmi() {
+    if (!debug) {
+        debug = true;
+        // printCount = 1;
+    }
+
+    pushByteToStack((pc >> 8) & 0xFF);
+    pushByteToStack(pc & 0xFF);
+    status &= ~flags::B;
+    status |= flags::U;
+    status |= flags::I;
+    pushByteToStack(status);
+
+    pc = (bus->readBusCPU(0xFFFA + 1) << 8) | bus->readBusCPU(0xFFFA);
+    bus->transferCycles(8);
+
+}
+
+void cpu::irq() {
+
+    if (!(status & flags::I)) {
+
+        pushByteToStack((pc >> 8) & 0xFF);
+        pushByteToStack(pc & 0xFF);
+        status &= ~flags::B;
+        status |= flags::U;
+        status |= flags::I;
+        pushByteToStack(status);
+
+        pc = (bus->readBusCPU(0xFFFE + 1) << 8) | bus->readBusCPU(0xFFFE);
+        bus->transferCycles(7);
+    }
+
 }
 
 // Addressing mode methods, keep in mind IMP doesn't need one 
@@ -154,56 +199,75 @@ uint16_t cpu::INDe() {
 
 uint16_t cpu::INDXe() {
     uint16_t indxetemp = bus->readBusCPU(pc++);
-    byte tL = (indxetemp + x) & 0xFF;
-    byte tH = (indxetemp + x + 1) & 0xFF;
+    byte tL = (indxetemp) & 0xFF;
+    byte tH = (indxetemp + 1) & 0xFF;
 
     byte indexL = bus->readBusCPU(tL);
     byte indexH = bus->readBusCPU(tH);
 
 
-    return indexL | indexH << 8;
+    tempidx = (indexH) << 8 | indexL;
+    tempidx += x;
+
+    return tempidx;
 
 }
 
 uint16_t cpu::INDYe() {
     uint16_t indxetemp = bus->readBusCPU(pc++);
-    byte tL = (indxetemp + y) & 0xFF;
-    byte tH = (indxetemp + y + 1) & 0xFF;
+    byte tL = (indxetemp) & 0xFF;
+    byte tH = (indxetemp + 1) & 0xFF;
 
     byte indexL = bus->readBusCPU(tL);
     byte indexH = bus->readBusCPU(tH);
 
 
-    return indexL | indexH << 8;
+    tempidx =  (indexH) << 8 | indexL;
+    tempidx += y;
+    
+    return tempidx;
+}
 
+byte cpu::fetchValue() {
+    if (addressingMode != IMP && addressingMode != IMM) {
+        operandValue = bus->readBusCPU(operandAddress);
+        return operandValue;
+    }
+    else if (addressingMode == IMM) {
+        operandValue = operandAddress;
+    }
 }
 
 // I wrote a switch statement for each opcode instead of using lookup table
 void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes addressingMode) {
-    byte operandValue = 0;
-    uint16_t operandAddress = 0;
+    operandValue = 0;
+    operandAddress = 0;
     if (addressingMode != ACC && addressingMode != IMP && addressingMode != REL) {
         auto handlerIt = addressingModeHandlers.find(addressingMode);
         if (handlerIt != addressingModeHandlers.end()) {
             operandAddress = handlerIt->second();
-            operandValue = bus->readBusCPU(operandAddress);
+            // operandValue = bus->readBusCPU(operandAddress);
         }
     }
     else if (addressingMode == REL) {
         relAddr = RELe();
     }
+    else if (addressingMode == IMP) {
+        operandValue = a;
+    }
 
     switch (instruction) {
         // Add With Carry
     case ADC:
+        fetchValue();
         if (addressingMode == ABSX || addressingMode == ABSY || addressingMode == INDY) {
             if (pageCrossed) {
                 cycleCount += 1;
             }
         }
-        sum = a + operandAddress + (status & flags::C ? 1 : 0);
+        sum = a + operandValue + (status & flags::C ? 1 : 0);
         ADCresult = sum & 0xFF;
-        overflow = ((a ^ operandAddress) & 0x80) == 0 && ((a ^ ADCresult) & 0x80) != 0;
+        overflow = ((a ^ operandValue) & 0x80) == 0 && ((a ^ ADCresult) & 0x80) != 0;
         status = (status & ~flags::V) | (overflow ? flags::V : 0);
         status = (status & ~flags::C) | (sum > 0xFF ? flags::C : 0);
         a = ADCresult;
@@ -214,18 +278,20 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Logical AND
     case AND:
+        fetchValue();
         if (addressingMode == ABSX || addressingMode == ABSY || addressingMode == INDY) {
             if (pageCrossed) {
                 cycleCount += 1;
             }
         }
-        a = a & operandAddress;
+        a = a & operandValue;
         status = (a == 0) ? (status | flags::Z) : (status & ~flags::Z);
         status = (a & 0x80) ? (status | flags::N) : (status & ~flags::N);
         break;
 
         // Arithmetic Shift Left
     case ASL:
+        fetchValue();
         if (addressingMode == ACC) {
             status = (a & 0x80) ? (status | flags::C) : (status & ~flags::C);
             a = a << 1;
@@ -283,6 +349,7 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Bit Test
     case BIT:
+        fetchValue();
         BITresult = a & operandValue;
         if (BITresult == 0) {
             status |= flags::Z;
@@ -402,24 +469,25 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Compare
     case CMP:
+        fetchValue();
         if (addressingMode == ABSX || addressingMode == ABSY || addressingMode == INDY) {
             if (pageCrossed) {
                 cycleCount += 1;
             }
         }
-        if (a >= operandAddress) {
+        if (a >= operandValue) {
             status |= flags::C;
         }
         else {
             status &= ~flags::C;
         }
-        if (a == operandAddress) {
+        if (a == operandValue) {
             status |= flags::Z;
         }
         else {
             status &= ~flags::Z;
         }
-        CMPresult = a - operandAddress;
+        CMPresult = a - operandValue;
         if (CMPresult & 0x80) {
             status |= flags::N;
         }
@@ -430,19 +498,20 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Compare X Register
     case CPX:
-        if (x >= operandAddress) {
+        fetchValue();
+        if (x >= operandValue) {
             status |= flags::C;
         }
         else {
             status &= ~flags::C;    
         }
-        if (x == operandAddress) {
+        if (x == operandValue) {
             status |= flags::Z;
         }
         else {
             status &= ~flags::Z;
         }
-        CPXresult = x - operandAddress;
+        CPXresult = x - operandValue;
         if (CPXresult & 0x80) {
             status |= flags::N;
         }
@@ -453,19 +522,20 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Compare Y Register
     case CPY:
-        if (y >= operandAddress) {
+        fetchValue();
+        if (y >= operandValue) {
             status |= flags::C;
         }
         else {
             status &= ~flags::C;
         }
-        if (y == operandAddress) {
+        if (y == operandValue) {
             status |= flags::Z;
         }
         else {
             status &= ~flags::Z;
         }
-        CPYresult = y - operandAddress;
+        CPYresult = y - operandValue;
         if (CPYresult & 0x80) {
             status |= flags::N;
         }
@@ -476,10 +546,11 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Decrement Memory
     case DEC:
+        fetchValue();
         operandValue -= 1;
-        bus->storeTempValues(operandAddress, operandValue, cycleCount);
+        bus->storeTempValues(operandAddress, operandValue & 0x00FF, cycleCount);
         // bus->writeBusCPU(operandAddress, operandValue);
-        if (operandValue == 0) {
+        if ((operandValue & 0x00FF) == 0) {
             status |= flags::Z;
         }
         else {
@@ -529,12 +600,13 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Exclusive OR
     case EOR:
+        fetchValue();
         if (addressingMode == ABSX || addressingMode == ABSY || addressingMode == INDY) {
             if (pageCrossed) {
                 cycleCount += 1;
             }
         }
-        a ^= operandAddress;
+        a ^= operandValue;
         if (a == 0) {
             status |= flags::Z;
         }
@@ -551,6 +623,7 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Increment Memory
     case INC:
+        fetchValue();
         operandValue = (operandValue + 1) & 0xFF;
         bus->storeTempValues(operandAddress, operandValue, cycleCount);
         // bus->writeBusCPU(operandAddress, operandValue);
@@ -620,12 +693,13 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Load Accumulator
     case LDA:
+        fetchValue();
         if (addressingMode == ABSX || addressingMode == ABSY || addressingMode == INDY) {
             if (pageCrossed) {
                 cycleCount += 1;
             }
         }
-        a = operandAddress;
+        a = operandValue;
         if (a == 0) {
             status |= flags::Z;
         }
@@ -633,6 +707,7 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
             status &= ~flags::Z;
         }
         if (a & 0x80) {
+            // printCount = 1;
             status |= flags::N;
         }
         else {
@@ -642,12 +717,13 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Load X Register
     case LDX:
+        fetchValue();
         if (addressingMode == ABSY) {
             if (pageCrossed) {
                 cycleCount += 1;
             }
         }
-        x = operandAddress;
+        x = operandValue;
         if (x == 0) {
             status |= flags::Z;
         }
@@ -664,12 +740,13 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Load Y Register
     case LDY:
+        fetchValue();
         if (addressingMode == ABSX) {
             if (pageCrossed) {
                 cycleCount += 1;
             }
         }
-        y = operandAddress;
+        y = operandValue;
         if (y == 0) {
             status |= flags::Z;
         }
@@ -686,6 +763,7 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Logical Shift Right
     case LSR:
+        fetchValue();
         if (addressingMode == ACC) {
             status = (a & 0x01) ? (status | flags::C) : (status & ~flags::C);
             a = a >> 1;
@@ -697,7 +775,7 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
             operandValue = operandValue >> 1;
             status = (operandValue == 0) ? (status | flags::Z) : (status & ~flags::Z);
             status = (operandValue & 0x80) ? (status | flags::N) : (status & ~flags::N);
-            bus->storeTempValues(operandAddress, operandValue, cycleCount);
+            bus->storeTempValues(operandAddress, operandValue & 0x00FF, cycleCount);
             // bus->writeBusCPU(operandAddress, operandValue);
         }
         break;
@@ -708,12 +786,13 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Logical Inclusive OR
     case ORA:
+        fetchValue();
         if (addressingMode == ABSX || addressingMode == ABSY || addressingMode == INDY) {
             if (pageCrossed) {
                 cycleCount += 1;
             }
         }
-        a = a | operandAddress;
+        a = a | operandValue;
         if (a == 0) {
             status |= flags::Z;
         }
@@ -764,6 +843,7 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Rotate Left
     case ROL:
+        fetchValue();
         if (addressingMode == ACC) {
             int oldCarry = (status & flags::C) != 0 ? 1 : 0;
             status = (a & 0x80) ? (status | flags::C) : (status & ~flags::C);
@@ -784,6 +864,7 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Rotate Right
     case ROR:
+        fetchValue();
         if (addressingMode == ACC) {
             int oldCarry = (status & flags::C) != 0 ? 0x80 : 0;
             status = (a & 0x01) ? (status | flags::C) : (status & ~flags::C);
@@ -824,12 +905,13 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 
         // Subtract with Carry
     case SBC:
+        fetchValue();
         if (addressingMode == ABSX || addressingMode == ABSY || addressingMode == INDY) {
             if (pageCrossed) {
                 cycleCount += 1;
             }
         }
-        tempAddr = operandAddress ^ 0x00FF;
+        tempAddr = operandValue ^ 0x00FF;
         sum = a + tempAddr + (status & flags::C ? 1 : 0);
         ADCresult = sum & 0xFF;
         overflow = ((a ^ tempAddr) & 0x80) == 0 && ((a ^ ADCresult) & 0x80) != 0;
@@ -933,7 +1015,7 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
 byte cpu::pop() {
     stackpt++;
     byte popVal = bus->readBusCPU(stackpt + 0x100);
-    if (printCount < 1000) {
+    if (printCount < 100) {
         std::cout << "RTS BYTE: " << std::hex << stackpt + 0x100 << " ";
         std::cout << "RTS VALUE: " << std::hex << static_cast<int>(popVal) << " ";
     }
@@ -942,7 +1024,7 @@ byte cpu::pop() {
 
 void cpu::pushByteToStack(byte value) {
     // bus->storeTempValues(stackpt + 0x100, value, cycleCount);
-    if (printCount < 1000) {
+    if (printCount < 100) {
         std::cout << "JSR BYTE: " << std::hex << stackpt + 0x100 << " ";
         std::cout << "JSR VALUE: " << std::hex << static_cast<int>(value) << " ";
     }

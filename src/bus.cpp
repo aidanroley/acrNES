@@ -25,10 +25,11 @@ uint8_t Bus::readBusCPU(uint16_t address) {
         return memory[address & 0x07FF]; // Mirror every 2KB
     }
     else if (address >= 0x2000 && address <= 0x3FFF) {
-        uint16_t ppuRegister = address & 0x0007; // Mask to get PPU register
+        uint16_t ppuRegister = address & 0x0007 + 0x2000; // Mask to get PPU register
         return ppu->handlePPURead(ppuRegister);
     }
     else if (address >= 0x4017 && address <= 0xFFFF) {
+        //std::cout << "bad. " << address << std::endl;
         return memory[address];
     }
     return 0x00; // Default if not in handled ranges
@@ -39,7 +40,9 @@ void Bus::writeBusCPU(uint16_t address, uint8_t data) {
         memory[address & 0x07FF] = data; // Mirror every 2KB
     }
     else if (address >= 0x2000 && address <= 0x3FFF) {
-        uint16_t ppuRegister = address & 0x0007; // Mask to get PPU register
+        // std::cout << "INCREDIBLE!!!!!" << std::endl;
+        uint16_t ppuRegister = address & 0x0007 + 0x2000; // Mask to get PPU register
+
         ppu->handlePPUWrite(ppuRegister, data);
     }
     else if (address == 0x4014) {
@@ -62,14 +65,20 @@ void Bus::dmaTransfer(uint16_t startAddr, byte* OAM, size_t size) {
 
 }
 
+void Bus::transferNMI() {
+    nmi = true;
+}
+
 
 void Bus::check() {
+    /*
     std::cout << "INSTANCE CHECKER" << std::endl;
     for (size_t i = 0; i < 16384; ++i) {
         std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(memory[0x8000 + i]) << ' ';
         if ((i + 1) % 16 == 0)  // Newline every 16 bytes for better readability
             std::cout << std::endl;
     }
+    */
 }
 
 uint16_t Bus::CpuPcStart() {
@@ -89,9 +98,11 @@ void Bus::transferCycles(int cycleCount) {
 
 }
 void Bus::storeTempValues(uint16_t operandAddress, byte operandValue, int cycleCount) {
+    
     cpuTempAddr = operandAddress;
     cpuTempData = operandValue;
     cpuTempCycles = cycleCount;
+    //cpuCycles += cpuTempCycles;
     write = true;
 }
 
@@ -107,7 +118,7 @@ void Bus::busClock() {
     if (ppuCycles == 0) {
         cpu->setPCStartup();
         cpu->run();
-        cpuCycles++;
+        //cpuCycles++;
     }
     /*
     ppu->clock();
@@ -122,27 +133,38 @@ void Bus::busClock() {
 
         cpu->run();
        // std::cout << "CPU clocked" << std::endl;
-        cpuCycles++;
+        // cpuCycles++;
     }
 
     // Only write to it when its one cycle from being done
     else if (cpuTempCycles == 1 && write) {
 
         writeBusCPU(cpuTempAddr, cpuTempData);
-    }
-
-    else if (cpuTempCycles > 1) {   
-        
-        // If cycles > 0, we need to wait before fetching next instruction
+        write = false;
     }
 
     ppu->clock();
     // std::cout << "PPU clocked" << std::endl;
     ppuCycles++;
 
+    if (nmi) {
+        cpu->nmi();
+        nmi = false;
+    }
+    /*
+    if (ppuCycles == 400000) {
+        for (const auto& value : ppu->ppuVRAM) {
+            //std::cout << "02A0 should be 2A" << static_cast<int>(ppu->ppuVRAM[0x02A0]) << std::endl;
+            std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(value) << " ";
+            
+        }
+        exit(0);
+    }
+    */
+
 
     // idk if I should decrement right after cpu run
-    if (cpuTempCycles != 0) {
+    if (cpuTempCycles > 0 && (ppuCycles % 3 == 0)) {
         cpuTempCycles--;
     }
 

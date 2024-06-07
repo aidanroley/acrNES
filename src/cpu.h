@@ -193,6 +193,9 @@ public:
 
     // Main Loop
     void run();
+    // Interrupts
+    void nmi();
+    void irq();
     // Inerrupt
     void interrupt();
     // Fetch instruction (or part of instruction)
@@ -233,6 +236,8 @@ public:
     byte effectiveValue;
     byte difference;
     uint16_t tempAddr;
+    uint16_t operandAddress;
+    byte operandValue = 0;
     int printCount = 0;
     int pc2 = 0;
 
@@ -242,6 +247,13 @@ public:
     bool pageCrossed;
 
     uint16_t temppc;
+
+    bool debug = false;
+
+    byte fetchValue();
+    byte opValue;
+
+    uint16_t tempidx;
 
     void setPCStartup() {
         pc = bus->CpuPcStart();
