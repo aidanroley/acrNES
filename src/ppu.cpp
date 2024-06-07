@@ -412,6 +412,48 @@ byte PPU::readPPUBus(uint16_t address) {
 	return ppuVRAM[address];
 }
 
+void PPU::getPatternAttributeShifters() {
+	patternLow = (patternLow & 0xFF00) | nextTileLow;
+	if (PPUMASK.b) {
+		//std::cout << "patternLow: " << std::hex << static_cast<int>(patternLow) << std::endl;
+	}
+	patternHigh = (patternHigh & 0xFF00) | nextTileHigh;
+	attributeLow = (attributeLow & 0xFF00) | ((nextTileAttribute & 0b01) ? 0xFF : 0x00);
+	attributeHigh = (attributeHigh & 0xFF00) | ((nextTileAttribute & 0b10) ? 0xFF : 0x00);
+}
+
+void PPU::shiftShifters() {
+	if (PPUMASK.b) {
+		patternLow <<= 1;
+		patternHigh <<= 1;
+		attributeLow <<= 1;
+		attributeHigh <<= 1;
+	}
+}
+
+void PPU::storeY() {
+	if (PPUMASK.b || PPUMASK.s) {
+		VRAMaddress &= ~0x0C00;
+		VRAMaddress |= (registers.t & 0x0C00);
+
+		VRAMaddress &= ~0x03E0;
+		VRAMaddress |= (registers.t & 0x03E0);
+
+		VRAMaddress &= ~0xF000;
+		VRAMaddress |= (registers.t & 0xF000);
+	}
+}
+
+void PPU::storeX() {
+	if (PPUMASK.b || PPUMASK.s) {
+		VRAMaddress &= ~0x0C00;
+		VRAMaddress |= (registers.t & 0x0C00);
+
+		VRAMaddress &= ~0x001F;
+		VRAMaddress |= (registers.t & 0x001F);
+	}
+
+}
 void PPU::clock() {
 	if (VRAMaddress > 0x1E) {
 		//std::cout << "BAD" << std::dec << PPUcycle << std::hex << VRAMaddress << std::endl;
@@ -458,17 +500,19 @@ void PPU::clock() {
 
 		// At 256 it increments vert(v) as well
 		else if (PPUcycle > 0 && (PPUcycle <= 256 || PPUcycle >= 321) && scanline < 240) {
+			shiftShifters();
 			
 			switch (PPUcycle % 8) {
 					
 			case 0:
-				if (PPUcycle == 256) {
-					incHorizontal();
+				if (PPUcycle == 256) {	
+					// incHorizontal();
 
 					if (PPUMASK.b || PPUMASK.s) {
 						incVertical();
 					}
 				}
+				/*
 				localX = PTx % 4;
 				localY = PTy % 4;
 
@@ -490,7 +534,7 @@ void PPU::clock() {
 
 				SDL_RenderDrawPoint(renderer, xCoarse * 8 + xFine, yCoarse * 8 + yFine);
 				SDL_RenderPresent(renderer); // Update screen with the rendering performed
-				*/
+				
 				// std::cout << std::hex << "Color index" << colorIndex << std::endl;
 
 				xF = VRAMaddress & 0x07;
@@ -513,16 +557,13 @@ void PPU::clock() {
 				}
 				
 				
-
+				*/
 
 				incHorizontal();
 				break;
 
 			case 1:
-				patternLow = (patternLow & 0xFF00) | nextTileLow;
-				patternHigh = (patternHigh & 0xFF00) | nextTileHigh;
-				attributeLow = (attributeLow & 0xFF00) | ((nextTileAttribute & 0b01) ? 0xFF : 0x00);
-				attributeLow = (attributeLow & 0xFF00) | ((nextTileAttribute & 0b01? 0xFF : 0x00);
+				getPatternAttributeShifters();
 				break;
 
 			case 2:
@@ -530,13 +571,33 @@ void PPU::clock() {
 				//std::cout << "tile address" << std::hex << tileAddress << std::endl;
 				//std::cout << "tile ID" << tileID << std::endl;
 				nextTileID = readPPUBus(tileAddress); // ppuVRAM[tileAddress];
+				if (PPUMASK.b) {
+					//std::cout << "nextTileID: " << std::hex << static_cast<int>(nextTileID) << std::endl;
+				}
 				break;
 
 			case 3:
+				// nextTileAttribute = 
 				break;
 
 			case 4:
 				attributeAddress = 0x23C0 | (VRAMaddress & 0x0C00) | ((VRAMaddress >> 4) & 0x38) | ((VRAMaddress >> 2) & 0x07);
+				nextTileAttribute = readPPUBus(attributeAddress);
+				// std::cout << "nextTileAttributeOG: " << std::hex << static_cast<int>(nextTileAttribute) << std::endl;
+
+				if ((VRAMaddress >> 5) & 0x02) {
+					nextTileAttribute >>= 4;
+				}
+				if (VRAMaddress & 0x02) {
+					nextTileAttribute >>= 2;
+				}
+				nextTileAttribute &= 0x03;
+				if (PPUMASK.b) {
+					// std::cout << "Attributeaddres: " << std::hex << static_cast<int>(attributeAddress) << std::endl;
+					// std::cout << "nextTileAttribute: " << std::hex << static_cast<int>(nextTileAttribute) << std::endl;
+				}
+
+				/*
 				if (PPUMASK.b) {
 					std::cout << "VRAM ADDR " << std::hex << static_cast<int>(VRAMaddress) << std::endl;
 					std::cout << "attribute address " << std::hex << static_cast<int>(attributeAddress) << std::endl;
@@ -556,16 +617,25 @@ void PPU::clock() {
 				TR = attributeData >> 2 & 0x03;
 				TL = attributeData >> 0 & 0x03;
 				attributeData = BR << 6 | BL << 4 | TR << 2 | TL;
+				*/
 				
 				break;
 
 			case 5:
+				nextTileLow = readPPUBus((PPUCTRL.B << 12) + ((uint16_t)nextTileID << 4) + (VRAMaddress >> 12));
+				if (PPUMASK.b) {
+					//std::cout << "nextTileLow: " << std::hex << static_cast<int>(nextTileLow) << std::endl;
+				}
 				break;
 
 			case 6:
+				nextTileHigh = readPPUBus((PPUCTRL.B << 12) + ((uint16_t)nextTileID << 4) + (VRAMaddress >> 12) + 8);
+				if (PPUMASK.b) {
+					//std::cout << "nextTileHigh: " << std::hex << static_cast<int>(nextTileHigh) << std::endl;
+				}
 				// tileDataLow = getPixelValue(NTS, tileID, PTx, PTy);
 				break;
-
+				
 			case 7:
 				break;
 
@@ -576,7 +646,18 @@ void PPU::clock() {
 
 		}
 
+		if (PPUcycle == 257) {
+			getPatternAttributeShifters();
+			storeX();
+		}
 
+		if (PPUcycle == 338 || PPUcycle == 340) {
+			nextTileID = readPPUBus(0x2000 | (VRAMaddress & 0xFF00));
+		}
+
+		if (scanline == -1 && PPUcycle >= 280 && PPUcycle < 305) {
+			storeY();
+		}
 
 	}
 
@@ -590,7 +671,54 @@ void PPU::clock() {
 
 	}
 
-	else if (PPUcycle == 340 && scanline != 260 ) {
+	if (PPUMASK.b) {
+
+		if (PPUMASK.m || PPUcycle > 8) {
+
+			scrollShift = 0x8000 >> xFine;
+			pixelL = (patternLow & scrollShift) > 0;
+			pixelH = (patternHigh & scrollShift) > 0;
+
+			pixel = pixelH << 1 | pixelL;
+
+			paletteL = (attributeLow & scrollShift) > 0;
+			paletteH = (attributeHigh & scrollShift) > 0;
+
+			palette = paletteH << 1 | paletteL;
+			if (PPUMASK.b && patternLow != 0) {
+				//std::cout << "final pixel: " << std::hex << static_cast<int>(pixel) << std::endl;
+			}
+		}
+	}
+
+		uint16_t finalAddr = readPPUBus(0x3F00 + pixel + 4 * palette); //(0x3F00 | ((palette << 2) | pixel));
+
+	if (palette != 0 && palette != 3) {
+		//std::cout << "palette " << std::hex << static_cast<int>(palette) << std::endl << "finalAddr" << static_cast<int>(finalAddr) << std::endl;
+	}
+	if (pixel != 0 && temp) {
+			temp = false;
+		//std::cout << std::dec << "pixel " << static_cast<int>(pixel) << std::hex << std::endl;
+		for (int addr = 0x3F00; addr <= 0x3FFF; addr++) {
+			//std::cout << "Address " << std::hex << std::setw(4) << std::setfill('0') << addr
+				//<< ": " << std::setw(2) << static_cast<int>(ppuVRAM[addr]) << std::endl;
+		}
+		
+				
+	}
+
+	if (PPUMASK.b && patternLow != 0) {
+		
+		//std::cout << "FINAL ADDRESS: " << std::hex << static_cast<int>(0x3F00 + (((palette << 2) + pixel) & 0x3F)) << std::endl;
+		//std::cout << "pixel: " << std::hex << static_cast<int>(finalAddr) << std::endl;
+		//std::cout << "palette: " << std::hex << static_cast<int>(finalAddr) << std::endl;
+
+		//std::cout << "PPU CYCLE: " << std::dec << bus->ppuCycles << std::endl;
+		
+	}
+	SetPixel(PPUcycle - 1, scanline, pixelColors[finalAddr]);
+
+	if (PPUcycle == 340 && scanline != 260 ) {
 		if (scanline == 0) {
 			// std::cout << "PPU checkpoint" << scanline << std::endl;
 		}
@@ -598,7 +726,7 @@ void PPU::clock() {
 		scanline++;
 	}
 
-	else if (scanline == 260 && PPUcycle == 340) {
+	if (scanline == 260 && PPUcycle == 340) {
 		UpdateScreen();
 		// std::cout << "screen updated" << std::endl;
 		PPUcycle = 0;

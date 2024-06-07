@@ -186,7 +186,7 @@ public:
 		pixelColors[0x3E] = SDL_MapRGB(format, 0, 0, 0);
 		pixelColors[0x3F] = SDL_MapRGB(format, 0, 0, 0);
 	}
-
+	bool temp = true;
 	int scanline = -1;
 	int PPUcycle = 0;
 	bool OddFrame;
@@ -254,7 +254,20 @@ public:
 	uint16_t patternHigh;
 	uint16_t attributeLow;
 	uint16_t attributeHigh;
+	byte pixel;
+	byte palette;
+	uint16_t scrollShift;
 
+	byte pixelL;
+	byte pixelH;
+	byte paletteL;
+	byte paletteH;
+
+	void PPU::getPatternAttributeShifters();
+	void PPU::shiftShifters();
+
+	void PPU::storeX();
+	void PPU::storeY();
 
 	void UpdateScreen() {
 		SDL_UpdateTexture(texture, nullptr, pixelBuffer.data(), 256 * sizeof(uint32_t));

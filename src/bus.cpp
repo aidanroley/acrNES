@@ -107,7 +107,7 @@ void Bus::storeTempValues(uint16_t operandAddress, byte operandValue, int cycleC
 }
 
 void Bus::busClock() {
-    if (ppuCycles == 9999999) {
+    if (ppuCycles == 999) {
         ppuCycles = 3;
     }
     if (ppuCycles == 0) {
