@@ -2,9 +2,10 @@
 #include "PPU.h"
 #include "cpu.h"
 #include "Mapper00.h"
+#include "Emulator.h"
 
 
-Bus::Bus() : ppu(nullptr), mapper00(nullptr), cpu(nullptr) {
+Bus::Bus() : ppu(nullptr), mapper00(nullptr), cpu(nullptr), emulator(nullptr) {
     std::fill(std::begin(memory), std::end(memory), 0);
 
     //Bus::connectPPU(ppu);
@@ -28,6 +29,11 @@ uint8_t Bus::readBusCPU(uint16_t address) {
         uint16_t ppuRegister = address & 0x0007 + 0x2000; // Mask to get PPU register
         return ppu->handlePPURead(ppuRegister);
     }
+    else if (address == 0x4016) {
+        byte inputData = (inputRegister & 0x80) != 0 ? 0x01 : 0x00;
+        inputRegister <<= 1;
+        return inputData;
+    }
     else if (address >= 0x4017 && address <= 0xFFFF) {
         //std::cout << "bad. " << address << std::endl;
         return memory[address];
@@ -49,7 +55,31 @@ void Bus::writeBusCPU(uint16_t address, uint8_t data) {
         ppu->handlePPUWrite(address, data);
         // MAKE CPU WAIT 512 CYCLES :D
     }
+    else if (address == 0x4016) {
+
+        if (data & 0x01) {
+            previousValue = 1;
+        }
+
+        else if (previousValue == 1) { //&& data == 0) {
+            SDL_Event e;
+            while (SDL_PollEvent(&e) != 0) {
+                if (e.type == SDL_QUIT) {
+                    emulator->ok = false;
+                }
+                else {
+                    updateControllerState(e);
+                    previousValue = 0;
+
+                }
+            }
+        }
+        
+        //previousValue = data;
+    }
+
 }
+
 
 void Bus::dmaTransfer(uint16_t startAddr, byte* OAM, size_t size) {
     std::cout << "OAM Data: \n";

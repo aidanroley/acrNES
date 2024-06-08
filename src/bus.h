@@ -10,10 +10,12 @@
 #include <iostream>
 #include <iomanip> 
 #include "singleton.h"
+#include <SDL.h>;
 
 class PPU;
 class Mapper00;
 class cpu;
+class Emulator;
 
 typedef uint8_t byte;
 
@@ -26,6 +28,7 @@ public:
     PPU* ppu;
     Mapper00* mapper00;
     cpu* cpu;
+    Emulator* emulator;
 
     uint8_t memory[0x10000]; // Fixed size to 0x4000 which is 16KB, not 64KB
     // Bus();
@@ -70,6 +73,95 @@ public:
     bool nmi = false;
 
     void transferNMI();
+
+    byte tempInputRegister;
+    byte inputRegister;
+
+    
+    void updateControllerState(const SDL_Event& e) {
+        //inputRegister = 0;
+        if (e.type == SDL_KEYDOWN || e.type == SDL_KEYUP) {
+
+            bool pressed = (e.type == SDL_KEYDOWN);
+
+            switch (e.key.keysym.sym) {
+
+            case SDLK_RIGHT://x:
+                if (pressed) {
+                    inputRegister |= 0x01;
+                }
+                else {
+                    inputRegister &= ~0x01;
+                };
+                break;
+
+            case SDLK_LEFT://z:
+                if (pressed) {
+                    inputRegister |= 0x02;
+                }
+                else {
+                    inputRegister &= ~0x02;
+                }
+                break;
+
+            case SDLK_DOWN://a:
+                if (pressed) {
+                    inputRegister |= 0x04;
+                }
+                else {
+                    inputRegister &= ~0x04;
+                }
+                break;
+
+            case SDLK_UP://s:
+                if (pressed) {
+                    inputRegister |= 0x08;
+                }
+                else {
+                    inputRegister &= ~0x08;
+                }
+                break;
+
+            case SDLK_s://UP:
+                if (pressed) {
+                    inputRegister |= 0x10;
+                }
+                else {
+                    inputRegister &= ~0x10;
+                }
+                break;
+
+            case SDLK_a://DOWN:
+                if (pressed) {
+                    inputRegister |= 0x20;
+                }
+                else {
+                    inputRegister &= ~0x20;
+                }
+                break;
+
+            case SDLK_z://LEFT:
+                if (pressed) {
+                    inputRegister |= 0x40;
+                }
+                else {
+                    inputRegister &= ~0x40;
+                }
+                break;
+
+            case SDLK_x: //RIGHT:
+                if (pressed) {
+                    inputRegister |= 0x80;
+                }
+                else {
+                    inputRegister &= ~0x80;
+                }
+                break;
+            }
+
+        }
+    }
+    byte previousValue = 0;
 };
 
 #endif // BUS_H
