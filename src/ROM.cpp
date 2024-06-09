@@ -10,10 +10,10 @@ int ROM::parseFile() {
 	header.NES2 = false;
 	std::vector<byte> byteArray;
 	//const char* filename = "C:\\Users\\bridg\\Downloads\\Super Mario Bros (E)\\Super Mario Bros (E).nes";
-	//const char* filename = "C:\\Users\\bridg\\Downloads\\donkeykong.nes";
-	const char* filename = "C:\\Users\\bridg\\Downloads\\nestest.nes";
+	const char* filename = "C:\\Users\\bridg\\Downloads\\donkeykong.nes";
+	//const char* filename = "C:\\Users\\bridg\\Downloads\\nestest.nes";
 	//const char* filename = "C:\\Users\\bridg\\Downloads\\cpu_dummy_reads.nes";
-	// const char* filename = "C:\\Users\\bridg\\Downloads\\Battletoads (USA).nes";
+	 //const char* filename = "C:\\Users\\bridg\\Downloads\\Battletoads (USA).nes";
 	std::ifstream file(filename, std::ios::binary);
 	if (!file) {
 		std::cerr << "Cannot open file." << std::endl;

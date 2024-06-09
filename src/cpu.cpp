@@ -27,7 +27,7 @@ void cpu::run() {
             printCount++;
            
             
-            if (bus->ppuCycles > 34962066) {
+            if (bus->ppuCycles > 100000000) {
                 std::cout << "Opcode: 0x" << std::hex << static_cast<int>(opcode) << " " << std::dec << printCount << std::endl;
 ;                 //std::cout << "Cycle: "<< std::dec << cycleCount << std::endl;
             }
@@ -35,11 +35,11 @@ void cpu::run() {
             
 
             // Converts hexadecimal to string for readability
-            std::stringstream ss;
-            ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(opcode);
-            std::string opcodeStr = ss.str();
+            //std::stringstream ss;
+            //ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(opcode);
+            //std::string opcodeStr = ss.str();
             for (const auto& info : opcodeTable) {
-                if (info.origOpcode == opcodeStr) {
+                if (info.origOpcode == opcode) {
                     cycleCount += info.cycles;
                     addressingMode = info.addressingMode;
                     instruction = info.instruction;
@@ -72,13 +72,13 @@ byte cpu::fetch() {
     if (pc == 0xc013) {
         printCount = 1;
     }
-    if (bus->ppuCycles > 34962099) {
+    if (bus->ppuCycles > 10000000) {
 
         std::cout << "pc: " << std::hex << pc << " ";
         std::cout << "A: " << std::hex << static_cast<int>(a) << " ";
         std::cout << "X: " << std::hex << static_cast<int>(x) << " ";
         std::cout << "Y: " << std::hex << static_cast<int>(y) << " ";
-        std::cout << "P: " << std::dec << static_cast<int>((status & ~0x04) + 0x24) << " ";
+        std::cout << "P: " << std::hex << static_cast<int>((status & ~0x04) + 0x24) << " ";
         std::cout << "SP:: " << std::hex << static_cast<int>(stackpt) << " ";
 
 
@@ -163,7 +163,7 @@ int8_t cpu::RELe() {
 
 // Reads LSB then MSB then combines them and shifts the MSB to the left
 uint16_t cpu::ABSe() {
-    absolute = bus->readBusCPU(pc) | (bus->readBusCPU(pc + 1) << 8);
+    absolute = (bus->readBusCPU(pc)) | ((bus->readBusCPU(pc + 1)) << 8);
     pc += 2;
     return absolute;
 }
@@ -199,15 +199,15 @@ uint16_t cpu::INDe() {
 
 uint16_t cpu::INDXe() {
     uint16_t indxetemp = bus->readBusCPU(pc++);
-    byte tL = (indxetemp) & 0xFF;
-    byte tH = (indxetemp + 1) & 0xFF;
+    byte tL = (indxetemp + x) & 0xFF;
+    byte tH = (indxetemp + x + 1) & 0xFF;
 
     byte indexL = bus->readBusCPU(tL);
     byte indexH = bus->readBusCPU(tH);
 
 
     tempidx = (indexH) << 8 | indexL;
-    tempidx += x;
+    //tempidx += x;
 
     return tempidx;
 
@@ -888,6 +888,8 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
         newStatusRTI = pop();
         // newStatusRTI = (newStatusRTI & ~flags::B & ~flags::U) | (status & (flags::B | flags::U)); IDK if i need this line
         status = newStatusRTI;
+        status &= ~flags::I;
+        status &= ~flags::B;
         RTIlow = pop();
         RTIhigh = pop();
         pc = (RTIhigh << 8) | RTIlow;

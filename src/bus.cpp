@@ -85,11 +85,11 @@ void Bus::dmaTransfer(uint16_t startAddr, byte* OAM, size_t size) {
     std::cout << "OAM Data: \n";
     for (size_t i = 0; i < size; ++i) {
         OAM[i] = memory[startAddr + i];
-        /*
-        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(OAM[i]) << ' ';
-        if ((i + 1) % 16 == 0) // Newline every 16 bytes for better readability
-            std::cout << std::endl;
-            */
+        
+        //std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(OAM[i]) << ' ';
+        //if ((i + 1) % 16 == 0) // Newline every 16 bytes for better readability
+           // std::cout << std::endl;
+            
     }
 
 

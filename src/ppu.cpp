@@ -8,7 +8,7 @@ void PPU::mirror(bool mirror) {
 		std::cout << "horizontal" << std::endl;
 	}
 	else {
-		horizontal = true;
+		vertical = true;
 		std::cout << "vertical" << std::endl;
 	}
 
@@ -279,6 +279,7 @@ void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
 	case 0x4014:
 		OAMstartAddr = value * 0x100;
 		bus->dmaTransfer(OAMstartAddr, OAM, 256);
+		bus->transferCycles(512);
 
 		// Stall CPU 512 cycles here
 		break;
