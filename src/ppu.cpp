@@ -49,14 +49,14 @@ int PPU::getPixelValue(byte PT, uint16_t tile_index, byte x, byte y) {
 }
 
 void PPU::horizontalTtoV() {
-	if (PPUMASK.b) {
+	if (PPUMASK.b || PPUMASK.s) {
 		VRAMaddress = (VRAMaddress & 0x7BE0) | (registers.t & 0x041F);
 	}
 
 }
 
 void PPU:: verticalTtoV() {
-	if (PPUMASK.b) {
+	if (PPUMASK.b || PPUMASK.s) {
 		VRAMaddress = (VRAMaddress & 0x041F) | (registers.t & 0x7BE0);
 	}
 	
@@ -64,7 +64,7 @@ void PPU:: verticalTtoV() {
 }
 
 void PPU::incHorizontal() {
-	if (PPUMASK.b) {
+	if (PPUMASK.b || PPUMASK.s) {
 		if ((VRAMaddress & 0x001F) == 31) {
 			VRAMaddress &= ~0x001F;
 			VRAMaddress ^= 0x0400;
@@ -77,7 +77,7 @@ void PPU::incHorizontal() {
 }
 
 void PPU::incVertical() {
-	if (PPUMASK.b) {
+	if (PPUMASK.b || PPUMASK.s) {
 		// std::cout << "VRAMADDRESS" << VRAMaddress << std::endl;
 		if ((VRAMaddress & 0x7000) != 0x7000) {
 			VRAMaddress += 0x1000;
@@ -99,6 +99,14 @@ void PPU::incVertical() {
 		}
 	}
 
+}
+
+uint8_t PPU::flipBits(uint8_t tempByte) {
+
+    tempByte = ((tempByte & 0xF0) >> 4) | ((tempByte & 0x0F) << 4); // Swap nibbles
+	tempByte = ((tempByte & 0xCC) >> 2) | ((tempByte & 0x33) << 2); // Swap pairs
+	tempByte = ((tempByte & 0xAA) >> 1) | ((tempByte & 0x55) << 1); // Swap individual bits
+    return tempByte;
 }
 
 byte PPU::handlePPURead(uint16_t ppuRegister) {
@@ -275,14 +283,20 @@ void PPU::handlePPUWrite(uint16_t ppuRegister, byte value) {
 		VRAMaddress & 0x3FFF;
 		break;
 
-		// OAMDMA
+		/* // OAMDMA 
 	case 0x4014:
-		OAMstartAddr = value * 0x100;
-		bus->dmaTransfer(OAMstartAddr, OAM, 256);
-		bus->transferCycles(512);
+		if (value != 0) {
+			std::cout << "Debug: Entered handleDMA with value: " << (int)value << std::endl;
+		}
+		OAMstartAddr = value; // *0x100;
+		if (value != 0) {
+			bus->dmaTransfer(OAMstartAddr);
+		}
+		//bus->transferCycles(512);
 
 		// Stall CPU 512 cycles here
 		break;
+		*/
 
 	}
 
@@ -430,6 +444,23 @@ void PPU::shiftShifters() {
 		attributeLow <<= 1;
 		attributeHigh <<= 1;
 	}
+	
+	if (PPUMASK.s && PPUcycle > 0 && PPUcycle < 258) {
+
+		for (int i = 0; i < numSprites; i++) {
+
+			if (sprites[i].x > 0) {
+
+				sprites[i].x--;
+			}
+
+			else {
+
+				lowSprites[i] <<= 1;
+				highSprites[i] <<= 1;
+			}
+		}
+	}
 }
 
 void PPU::storeY() {
@@ -480,16 +511,22 @@ void PPU::clock() {
 			PPUSTATUS.O = false;
 			PPUSTATUS.V = false;
 			PPUSTATUS.S = false;
+
+			for (int i = 0; i < 8; i++) {
+
+				lowSprites[i] = 0;
+				highSprites[i] = 0;
+			}
 		}
 
-		else if (scanline == -1 && PPUcycle >= 280 && PPUcycle <= 304 && PPUMASK.b) {
+		else if (scanline == -1 && PPUcycle >= 280 && PPUcycle <= 304 && (PPUMASK.b || PPUMASK.s)) {
 
 			verticalTtoV();
 			
 		}
 
 
-		else if (scanline == 0 && PPUcycle == 0 && OddFrame && PPUMASK.b) {
+		else if (scanline == 0 && PPUcycle == 0 && OddFrame && (PPUMASK.b || PPUMASK.s)) {
 
 			PPUcycle = 1;
 		}
@@ -662,6 +699,125 @@ void PPU::clock() {
 
 	}
 
+	// Sprites
+
+	if (PPUcycle == 257 && scanline > -1 && scanline < 240) {
+
+		memset(sprites, 0, sizeof(sprites)); // Clear sprites array since there is only one per scanline
+		numSprites = 0; // Reset sprite count since it's per scanline
+
+		canSpriteZero = false;
+
+		// Clear shifters
+		for (int i = 0; i < 8; i++) {
+				
+			lowSprites[i] = 0;
+			highSprites[i] = 0;
+		}
+
+		OAMsprite = 0;
+
+		// 64 sprites in OAM total, 8 sprites in each scanline
+		while (OAMsprite < 64 && numSprites <= 8) {
+
+			int16_t d = ((int16_t)scanline - (int16_t)OAM[OAMsprite * 4]); // Gets the y-corrdinate difference
+
+
+			if (d >= 0 && d < ((PPUCTRL.H) ? 16 : 8) && numSprites < 8) {	// PPUCTRL.H sets whether height is 8 or 16
+				if (numSprites < 8) {
+
+					if (OAMsprite == 0) {
+
+						canSpriteZero = true;
+					}
+
+					memcpy(&sprites[numSprites], &OAM[OAMsprite * 4], 4); // Copies 4 bytes from OAM to sprites
+				}
+				numSprites++;
+			}
+
+			OAMsprite++;
+		}
+
+		if (numSprites >= 8) {
+
+			PPUSTATUS.O = true;
+		}
+
+	}
+
+	if (PPUcycle == 340 && scanline < 240 && scanline > -1) {
+
+		for (byte i = 0; i < numSprites; i++) {
+			//std::cout << "TILE THING " << static_cast<int>(sprites[i].id << 4) << std::endl;
+			// Height is 8
+			if (!PPUCTRL.H) {
+
+				if (!(sprites[i].attribute & 0x80)) {
+
+					spritePatternALow = (PPUCTRL.S << 12) | (sprites[i].id << 4) | (scanline - sprites[i].y);
+				}
+
+				else {
+
+					spritePatternALow = (PPUCTRL.S << 12) | (sprites[i].id << 4) | (7 - scanline - sprites[i].y);
+				}
+			}
+
+			else {
+
+				if (!(sprites[i].attribute & 0x80)) {
+
+					// Top 8 pixel rows of sprite
+					if (scanline - sprites[i].y < 8) {
+
+						spritePatternALow = ((sprites[i].id & 0x01) << 12) | ((sprites[i].id & 0xFE) << 4) | ((scanline - sprites[i].y) & 0x07);
+					}
+
+					else {
+
+						spritePatternALow = ((sprites[i].id & 0x01) << 12) | ((sprites[i].id & 0xFE + 1) << 4) | ((scanline - sprites[i].y) & 0x07);
+					}
+				}
+
+				else {
+
+					if (scanline - sprites[i].y < 8) {
+
+						spritePatternALow = ((sprites[i].id & 0x01) << 12) | ((sprites[i].id & 0xFE + 1) << 4) | (7 - (scanline - sprites[i].y) & 0x07);
+					}
+
+					else {
+
+						spritePatternALow = ((sprites[i].id & 0x01) << 12) | ((sprites[i].id & 0xFE) << 4) | (7 - (scanline - sprites[i].y) & 0x07);
+					}
+				}
+			}
+
+			// Read from PPU bus to get bits
+			spritePatternAHigh = spritePatternALow + 8;
+			//std::cout << "TILE ID " << static_cast<int>(sprites[i].id << 4) << std::endl;
+			//std::cout << "TILE LOW " << static_cast<int>(spritePatternALow) << std::endl;
+			//std::cout << "TILE HIGH" << static_cast<int>(spritePatternAHigh) << std::endl;
+
+			spritePatternBLow = readPPUBus(spritePatternALow);
+			spritePatternBHigh = readPPUBus(spritePatternAHigh);
+			//std::cout << "patter low HIGH" << static_cast<int>(spritePatternBLow) << std::endl;
+			//std::cout << "pattern HIGH" << static_cast<int>(spritePatternBHigh) << std::endl;
+
+			// Flip if needed
+			if (sprites[i].attribute & 0x40) {
+
+				spritePatternBLow = flipBits(spritePatternBLow);
+				spritePatternBHigh = flipBits(spritePatternBHigh);
+
+			}
+			lowSprites[i] = spritePatternBLow;
+			highSprites[i] = spritePatternBHigh;
+		}
+	}
+
+
 	// Vertical blank has started
 	if (scanline == 241 && PPUcycle == 1) {
 
@@ -692,7 +848,99 @@ void PPU::clock() {
 		}
 	}
 
-		uint16_t finalAddr = readPPUBus(0x3F00 + pixel + 4 * palette); //(0x3F00 | ((palette << 2) | pixel));
+
+	if (PPUMASK.s) {
+		//std::cout << "ppumask" << std::endl;
+
+		if (PPUMASK.M || (PPUcycle > 8)) {
+
+			spriteZeroRender = false;
+
+			for (byte i = 0; i < numSprites; i++) {
+
+				if (sprites[i].x == 0) {
+					if (numSprites != 8) {
+						//std::cout << "num sprites " << static_cast<int>(numSprites) << std::endl;
+					}
+					byte tempLowPix = (lowSprites[i] & 0x80) > 0;
+					byte tempHighPix = (highSprites[i] & 0x80) > 0;
+					spritePix = (tempHighPix << 1) | tempLowPix;
+					spritePalette = (sprites[i].attribute & 0x03) + 0x04;
+					spritePrio = (sprites[i].attribute & 0x20) == 0;
+
+					if (spritePix != 0) {
+
+						if (i == 0) {
+
+							spriteZeroRender = true;
+						}
+
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	if (spritePix != 0) {
+		// std::cout << "NOT ZERO" << std::endl;
+	}
+	if (pixel == 0 && spritePix == 0) {
+
+		totalPixel = 0;
+		totalPalette = 0;
+	}
+
+	else if (pixel == 0 && spritePix > 0) {
+
+		totalPixel = spritePix;
+		totalPalette = spritePalette;
+	}
+
+	else if (pixel > 0 && spritePix == 0) {
+
+		totalPixel = pixel;
+		totalPalette = palette;
+	}
+
+	else if (pixel > 0 && spritePix > 0) {
+
+		if (spritePrio) {
+
+			totalPixel = spritePix;
+			totalPalette = spritePalette;
+		}
+
+		else {
+
+			totalPixel = pixel;
+			totalPalette = palette;
+		}
+
+		if (spriteZeroRender && canSpriteZero) {
+
+			if (PPUMASK.b && PPUMASK.s) {
+
+				if (!(PPUMASK.M || PPUMASK.m)) { // Either
+
+					if (PPUcycle > 8 && PPUcycle < 258) {
+
+						PPUSTATUS.S = 1;
+					}
+				}
+
+				else {
+
+					if (PPUcycle > 0 && PPUcycle < 258) {
+
+						PPUSTATUS.S = 1;
+					}
+				}
+			}
+		}
+	}
+
+	uint16_t finalAddr = readPPUBus(0x3F00 + totalPixel + 4 * totalPalette); //(0x3F00 | ((palette << 2) | pixel));
 
 	if (palette != 0 && palette != 3) {
 		//std::cout << "palette " << std::hex << static_cast<int>(palette) << std::endl << "finalAddr" << static_cast<int>(finalAddr) << std::endl;
@@ -708,15 +956,8 @@ void PPU::clock() {
 				
 	}
 
-	if (PPUMASK.b && patternLow != 0) {
-		
-		//std::cout << "FINAL ADDRESS: " << std::hex << static_cast<int>(0x3F00 + (((palette << 2) + pixel) & 0x3F)) << std::endl;
-		//std::cout << "pixel: " << std::hex << static_cast<int>(finalAddr) << std::endl;
-		//std::cout << "palette: " << std::hex << static_cast<int>(finalAddr) << std::endl;
 
-		//std::cout << "PPU CYCLE: " << std::dec << bus->ppuCycles << std::endl;
-		
-	}
+
 	SetPixel(PPUcycle - 1, scanline, pixelColors[finalAddr]);
 
 	if (PPUcycle == 340 && scanline != 260 ) {
@@ -733,6 +974,7 @@ void PPU::clock() {
 		PPUcycle = 0;
 		scanline = -1;
 		printDebug = false;
+		frameDone = true;
 	}
 
 	PPUcycle++;

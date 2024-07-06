@@ -34,7 +34,10 @@ public:
     // Bus();
     void connectPPU(PPU* ppu);
     void connectMapper00(Mapper00* mapper00);
-    void dmaTransfer(uint16_t startAddr, byte* OAM, size_t size);
+    void dmaTransfer(byte startAddr);
+   byte dmaStartAddr;
+    byte dmaData;
+    byte dmaAddr;
 
 
     void initializePRGM0(const std::vector<uint8_t>& prg);
@@ -72,11 +75,15 @@ public:
 
     bool nmi = false;
 
+    bool dma = false;
+    bool dmaTemp = false;
+    int dmaCycles;
+
     void transferNMI();
 
     byte tempInputRegister;
     byte inputRegister;
-
+    byte actualInputRegister;
     
     void updateControllerState(const SDL_Event& e) {
         //inputRegister = 0;

@@ -21,6 +21,8 @@ public:
     Bus* bus = Bus::getInstance();
     bool ok = true;
 
+    float time;
+
     Emulator() : window(nullptr), renderer(nullptr), texture(nullptr), PPU(PPU::getInstance()) {
         pixelBuffer.resize(256 * 240);
     }

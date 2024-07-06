@@ -30,8 +30,8 @@ uint8_t Bus::readBusCPU(uint16_t address) {
         return ppu->handlePPURead(ppuRegister);
     }
     else if (address == 0x4016) {
-        byte inputData = (inputRegister & 0x80) != 0 ? 0x01 : 0x00;
-        inputRegister <<= 1;
+        byte inputData = (actualInputRegister & 0x80) > 0;
+        actualInputRegister <<= 1;
         return inputData;
     }
     else if (address >= 0x4017 && address <= 0xFFFF) {
@@ -52,36 +52,27 @@ void Bus::writeBusCPU(uint16_t address, uint8_t data) {
         ppu->handlePPUWrite(ppuRegister, data);
     }
     else if (address == 0x4014) {
-        ppu->handlePPUWrite(address, data);
+        //std::cout << "fuck you " << std::hex << std::setw(2) << std::setfill('0') << (int)data << std::dec << std::endl;
+        dmaTransfer(data);
+       // ppu->handlePPUWrite(address, data);
         // MAKE CPU WAIT 512 CYCLES :D
     }
     else if (address == 0x4016) {
 
-        if (data & 0x01) {
-            previousValue = 1;
-        }
-
-        else if (previousValue == 1) { //&& data == 0) {
-            SDL_Event e;
-            while (SDL_PollEvent(&e) != 0) {
-                if (e.type == SDL_QUIT) {
-                    emulator->ok = false;
-                }
-                else {
-                    updateControllerState(e);
-                    previousValue = 0;
-
-                }
-            }
-        }
-        
-        //previousValue = data;
+        actualInputRegister = inputRegister;
     }
 
 }
 
 
-void Bus::dmaTransfer(uint16_t startAddr, byte* OAM, size_t size) {
+void Bus::dmaTransfer(byte startAddr) {
+    dma = true;
+    dmaTemp = true;
+    dmaCycles = 512;
+    dmaStartAddr = startAddr;
+    //std::cout << "STAART ADDR" << std::hex << startAddr << std::endl;
+    dmaAddr = 0;
+    /*
     std::cout << "OAM Data: \n";
     for (size_t i = 0; i < size; ++i) {
         OAM[i] = memory[startAddr + i];
@@ -89,8 +80,10 @@ void Bus::dmaTransfer(uint16_t startAddr, byte* OAM, size_t size) {
         //std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(OAM[i]) << ' ';
         //if ((i + 1) % 16 == 0) // Newline every 16 bytes for better readability
            // std::cout << std::endl;
+           
             
     }
+*/
 
 
 }
@@ -159,7 +152,54 @@ void Bus::busClock() {
    //std::cout << " CPU TEMP CYCLES: " << cpuTempCycles << std::endl;
     // std::cout << " PPU TEMP CYCLES: " << ppuCycles << std::endl;
     // PPU runs 3 times as fast as CPU
-    if (cpuTempCycles == 0 && (ppuCycles % 3 == 0)) {
+    if (dma && ppuCycles % 3 == 0) {
+        
+
+        if (dmaTemp) {
+
+            if (ppuCycles % 2 == 1) {
+
+                dmaTemp = false;
+            }
+        }
+        else {
+
+            if (ppuCycles % 2 == 0) {
+
+                dmaData = readBusCPU(dmaStartAddr << 8 | dmaAddr);
+                if (dmaData != 0 && dmaData != 0xFF) {
+                   // std::cout << "YAY!" << std::hex << static_cast<int>(dmaData) << std::endl;
+                }
+            }
+
+            else {
+               // std::cout << "DMADATA " << ": "
+               //     << "0x" << std::hex << std::setw(2) << std::setfill('0') << dmaData
+               //     << std::dec << std::endl;
+                ppu->OAM[dmaAddr] = dmaData; 
+                dmaAddr++;
+
+                if (dmaAddr >= 256) {
+
+                    dmaAddr = 0;
+                }
+
+                if (dmaAddr == 0) {
+                    //std::cout << "DMA IS FALSE" << std::endl;
+                    for (int i = 50; i > 0; i--) {
+                        //std::cout << "Byte " << i << ": "
+                          //  << "0x" << std::hex << std::setw(2) << std::setfill('0') << (int)ppu->OAM[i]
+                            //<< std::dec << std::endl;
+                    }
+                    dma = false;
+                    // dmaTemp = true;
+                }
+            }
+        }
+
+
+    }
+    if (!dma && cpuTempCycles == 0 && (ppuCycles % 3 == 0)) {
 
         cpu->run();
        // std::cout << "CPU clocked" << std::endl;
@@ -167,7 +207,7 @@ void Bus::busClock() {
     }
 
     // Only write to it when its one cycle from being done
-    else if (cpuTempCycles == 1 && write) {
+    else if (!dma && cpuTempCycles == 1 && write) {
 
         writeBusCPU(cpuTempAddr, cpuTempData);
         write = false;
@@ -177,7 +217,7 @@ void Bus::busClock() {
     // std::cout << "PPU clocked" << std::endl;
     ppuCycles++;
 
-    if (nmi) {
+    if (nmi && !dma) {
         cpu->nmi();
         nmi = false;
     }
@@ -194,7 +234,7 @@ void Bus::busClock() {
 
 
     // idk if I should decrement right after cpu run
-    if (cpuTempCycles > 0 && (ppuCycles % 3 == 0)) {
+    if (cpuTempCycles > 0 && (ppuCycles % 3 == 0) && !dma) {
         cpuTempCycles--;
     }
 

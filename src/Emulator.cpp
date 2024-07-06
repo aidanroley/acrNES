@@ -5,6 +5,8 @@
 
 #include <SDL.h>
 #include <iostream>
+#include <chrono>
+#include <thread>
 
 Emulator emulator;
 ROM romMain;
@@ -23,12 +25,37 @@ void Emulator::start() {
     PPU->checkPpuBus();
     PPU->InitializeColors();
 
-    while (ok) {
-       
-        // Example of setting a pixel
-        // SetPixel(100, 100, 0xFFFF0000); // Set pixel at (100, 100) to red
+    const double frameDuration = 1.0 / 60.0; // Duration of one frame in seconds
+    const auto frameDurationMs = std::chrono::milliseconds(static_cast<int>(frameDuration * 1000)); // Duration of one frame in milliseconds
 
-       // UpdateScreen();
-        bus->busClock();
+    while (ok) {
+        auto frameStart = std::chrono::high_resolution_clock::now();
+
+        PPU->frameDone = false;
+
+        // Run the PPU and CPU until a frame is completed
+        while (!PPU->frameDone) {
+            SDL_Event e;
+            while (SDL_PollEvent(&e) != 0) {
+                if (e.type == SDL_QUIT) {
+                    ok = false;
+                }
+                else {
+                    bus->updateControllerState(e);
+
+                }
+            }
+            bus->busClock();
+        }
+
+        // Calculate how long the frame took
+        auto frameEnd = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsedTime = frameEnd - frameStart;
+
+        // Calculate the time to sleep to maintain 60 FPS
+        auto sleepDuration = frameDurationMs - std::chrono::duration_cast<std::chrono::milliseconds>(elapsedTime);
+        if (sleepDuration > std::chrono::milliseconds(0)) {
+            std::this_thread::sleep_for(sleepDuration);
+        }
     }
 }

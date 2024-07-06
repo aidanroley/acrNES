@@ -3,6 +3,7 @@
 #define PPU_H
 // #include "singleton.h"
 #include <cstdint>
+#include <string.h>
 #include <SDL.h>
 #include "bus.h"
 
@@ -15,11 +16,39 @@ private:
 	SDL_PixelFormat* format;
 	SDL_Texture* texture;
 	std::vector<uint32_t> pixelBuffer;
-	byte OAM[256]{ 0 };
-	uint16_t OAMstartAddr{ 0 };
+	uint16_t OAMstartAddr = 0;
 	int patternTable[0x2000];
 
 public:
+
+	byte OAM[256]{ 0 };
+
+	struct sprite
+	{
+		byte y;
+		byte id;
+		byte attribute;
+		byte x;
+	} sprites[8];
+
+	bool canSpriteZero;
+	bool spriteZeroRender;
+	byte numSprites;
+	byte OAMsprite;
+	byte lowSprites[8];
+	byte highSprites[8];
+
+	byte spritePatternBLow;
+	byte spritePatternBHigh;
+	uint16_t spritePatternALow;
+	uint16_t spritePatternAHigh;
+
+	byte spritePix;
+	byte spritePalette;
+	byte spritePrio;
+
+	byte totalPixel = 0;
+	byte totalPalette = 0;
 
 	// Pass SDL components into the PPU class
 	void InitializeRenderer(SDL_Renderer* render, SDL_PixelFormat* formatted, SDL_Texture* text) {
@@ -41,6 +70,8 @@ public:
 	byte ppuVRAM[0x4000]{ 0 };
 
 	void checkPpuBus();
+
+	byte flipBits(uint8_t tempByte);
 
 	// Made 2 variables for nametable orientation to avoid confusion
 	bool horizontal = false; 
@@ -262,6 +293,9 @@ public:
 	byte pixelH;
 	byte paletteL;
 	byte paletteH;
+
+	bool frameDone;
+
 
 	void PPU::getPatternAttributeShifters();
 	void PPU::shiftShifters();
