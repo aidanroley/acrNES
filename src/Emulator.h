@@ -22,6 +22,7 @@ public:
     bool ok = true;
 
     float time;
+    bool doInput = true;
 
     Emulator() : window(nullptr), renderer(nullptr), texture(nullptr), PPU(PPU::getInstance()) {
         pixelBuffer.resize(256 * 240);

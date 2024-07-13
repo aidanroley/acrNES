@@ -85,86 +85,31 @@ public:
     byte inputRegister;
     byte actualInputRegister;
     
-    void updateControllerState(const SDL_Event& e) {
+    void updateControllerState(const Uint8* state) {
         //inputRegister = 0;
-        if (e.type == SDL_KEYDOWN || e.type == SDL_KEYUP) {
-
-            bool pressed = (e.type == SDL_KEYDOWN);
-
-            switch (e.key.keysym.sym) {
-
-            case SDLK_RIGHT://x:
-                if (pressed) {
-                    inputRegister |= 0x01;
-                }
-                else {
-                    inputRegister &= ~0x01;
-                };
-                break;
-
-            case SDLK_LEFT://z:
-                if (pressed) {
-                    inputRegister |= 0x02;
-                }
-                else {
-                    inputRegister &= ~0x02;
-                }
-                break;
-
-            case SDLK_DOWN://a:
-                if (pressed) {
-                    inputRegister |= 0x04;
-                }
-                else {
-                    inputRegister &= ~0x04;
-                }
-                break;
-
-            case SDLK_UP://s:
-                if (pressed) {
-                    inputRegister |= 0x08;
-                }
-                else {
-                    inputRegister &= ~0x08;
-                }
-                break;
-
-            case SDLK_s://UP:
-                if (pressed) {
-                    inputRegister |= 0x10;
-                }
-                else {
-                    inputRegister &= ~0x10;
-                }
-                break;
-
-            case SDLK_a://DOWN:
-                if (pressed) {
-                    inputRegister |= 0x20;
-                }
-                else {
-                    inputRegister &= ~0x20;
-                }
-                break;
-
-            case SDLK_z://LEFT:
-                if (pressed) {
-                    inputRegister |= 0x40;
-                }
-                else {
-                    inputRegister &= ~0x40;
-                }
-                break;
-
-            case SDLK_x: //RIGHT:
-                if (pressed) {
-                    inputRegister |= 0x80;
-                }
-                else {
-                    inputRegister &= ~0x80;
-                }
-                break;
-            }
+        if (state[SDL_SCANCODE_RIGHT]) {
+            inputRegister |= 0x01;
+        }
+        if (state[SDL_SCANCODE_LEFT]) {
+            inputRegister |= 0x02;
+        }
+        if (state[SDL_SCANCODE_DOWN]) {
+            inputRegister |= 0x04;
+        }
+        if (state[SDL_SCANCODE_UP]) {
+            inputRegister |= 0x08;
+        }
+        if (state[SDL_SCANCODE_S]) {
+            inputRegister |= 0x10;
+        }
+        if (state[SDL_SCANCODE_A]) {
+            inputRegister |= 0x20;
+        }
+        if (state[SDL_SCANCODE_Z]) {
+            inputRegister |= 0x40;
+        }
+        if (state[SDL_SCANCODE_X]) {
+            inputRegister |= 0x80;
 
         }
     }

@@ -130,8 +130,8 @@ void Bus::storeTempValues(uint16_t operandAddress, byte operandValue, int cycleC
 }
 
 void Bus::busClock() {
-    if (ppuCycles == 999) {
-        ppuCycles = 3;
+    if (ppuCycles == 999999) {
+        ppuCycles = 40000;
     }
     if (ppuCycles == 0) {
         ppu = PPU::getInstance();

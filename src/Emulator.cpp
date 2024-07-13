@@ -32,22 +32,35 @@ void Emulator::start() {
         auto frameStart = std::chrono::high_resolution_clock::now();
 
         PPU->frameDone = false;
-
+        doInput = true;
+        bus->inputRegister = 0;
+ 
         // Run the PPU and CPU until a frame is completed
         while (!PPU->frameDone) {
-            SDL_Event e;
-            while (SDL_PollEvent(&e) != 0) {
-                if (e.type == SDL_QUIT) {
-                    ok = false;
-                }
-                else {
-                    bus->updateControllerState(e);
+          
 
-                }
+            if (doInput) {
+                
+                    SDL_Event e;
+                    //bus->inputRegister = 0;
+                    if (SDL_PollEvent(&e) != 0) {
+                        if (e.type == SDL_QUIT) {
+                            ok = false;
+                        }
+                        //else {
+                           // bus->updateControllerState(e);
+                            //break;
+
+                       // }
+                    } 
+                    //doInput = false;
+                    
+                const Uint8* currentKeyStates = SDL_GetKeyboardState(nullptr);
+                bus->updateControllerState(currentKeyStates);
             }
             bus->busClock();
         }
-
+        
         // Calculate how long the frame took
         auto frameEnd = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsedTime = frameEnd - frameStart;
@@ -57,5 +70,6 @@ void Emulator::start() {
         if (sleepDuration > std::chrono::milliseconds(0)) {
             std::this_thread::sleep_for(sleepDuration);
         }
+        
     }
 }
