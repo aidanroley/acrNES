@@ -24,8 +24,6 @@ public:
     }
     
     byte prgStart = 0x8000;
-    // void setBus(Bus* b) { bus = b; }
-    // void initializePRG(const std::vector<uint8_t>& prg);
     void mapperCpuRead();
     void mapperCpuWrite(const std::vector<uint8_t>& prg, const std::vector<uint8_t>& chr);
     void mapperPpuRead();

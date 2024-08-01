@@ -39,21 +39,14 @@ void Emulator::start() {
         while (!PPU->frameDone) {
           
 
-            if (doInput) {
+            if (doInput && bus->ppuCycles % 5 == 0) {
                 
                     SDL_Event e;
-                    //bus->inputRegister = 0;
                     if (SDL_PollEvent(&e) != 0) {
                         if (e.type == SDL_QUIT) {
                             ok = false;
                         }
-                        //else {
-                           // bus->updateControllerState(e);
-                            //break;
-
-                       // }
                     } 
-                    //doInput = false;
                     
                 const Uint8* currentKeyStates = SDL_GetKeyboardState(nullptr);
                 bus->updateControllerState(currentKeyStates);

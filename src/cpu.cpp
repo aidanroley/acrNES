@@ -17,6 +17,8 @@ int mainCPU() {
 }   
 
 void cpu::run() {
+
+    // Uncomment these lines when parsing intel hex
     // loadIntelHexFile("C:/Users/Aidan/Downloads/functional.hex");
     // while (true) {
     // long startTime = cpu::getCurrentTime();
@@ -24,20 +26,8 @@ void cpu::run() {
             cycleCount = 0;
             byte opcode = fetch();
             
-            printCount++;
-           
-            
-            if (bus->ppuCycles > 100000000) {
-                std::cout << "Opcode: 0x" << std::hex << static_cast<int>(opcode) << " " << std::dec << printCount << std::endl;
-;                 //std::cout << "Cycle: "<< std::dec << cycleCount << std::endl;
-            }
-            
-            
-
-            // Converts hexadecimal to string for readability
-            //std::stringstream ss;
-            //ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(opcode);
-            //std::string opcodeStr = ss.str();
+            printCount++; // For debugging
+      
             for (const auto& info : opcodeTable) {
                 if (info.origOpcode == opcode) {
                     cycleCount += info.cycles;
@@ -46,29 +36,15 @@ void cpu::run() {
                     break;
                 }
             }
-            //std::cout << std::dec << cycleCount << std::endl;
 
-//std::cout << cycles << std::endl;
             decodeAndExecute(instruction, cycleCount, addressingMode);
             bus->transferCycles(cycleCount);
-       // }
-        /*
-        long endTime = getCurrentTime();
-        long elapsedTime = endTime - startTime;
-        long expectedTime = 1790000 / 60; // 1000000
-        if (elapsedTime < expectedTime) {
-            std::this_thread::sleep_for(std::chrono::microseconds(expectedTime - elapsedTime)); // Delay to sync with real-time
-        }
-        */
-   // }
+      
 }
 
 // Fetches instruction from an address, returns the opcode, increments program counter
 byte cpu::fetch() {
     byte opcode = bus->readBusCPU(pc);
-    //if (pc == 0xc013 || pc == 0xc03d || pc == 0xc054 || pc == 0xc306 || pc == 0xc2e2 || pc == 0xc285) {
-       // printCount = 100;
-   // }
     if (pc == 0xc013) {
         printCount = 1;
     }
@@ -246,7 +222,6 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
         auto handlerIt = addressingModeHandlers.find(addressingMode);
         if (handlerIt != addressingModeHandlers.end()) {
             operandAddress = handlerIt->second();
-            // operandValue = bus->readBusCPU(operandAddress);
         }
     }
     else if (addressingMode == REL) {
@@ -304,7 +279,6 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
             status = (operandValue == 0) ? (status | flags::Z) : (status & ~flags::Z);
             status = (operandValue & 0x80) ? (status | flags::N) : (status & ~flags::N);
             bus->storeTempValues(operandAddress, operandValue, cycleCount);
-            // bus->writeBusCPU(operandAddress, operandValue);
         }
         break;
 
@@ -312,7 +286,6 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
     case BCC:
         if (!(status & flags::C)) {
             cycleCount++;
-            // int8_t signedOffset = static_cast<int8_t>(operandAddress);
             temppc = pc + relAddr;
             if ((pc & 0xFF00) != (temppc & 0xFF00)) {
                 cycleCount++;
@@ -325,7 +298,6 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
     case BCS:
         if (status & flags::C) {
             cycleCount++;
-            // int8_t signedOffset = static_cast<int8_t>(operandAddress);
             temppc = pc + relAddr;
             if ((pc & 0xFF00) != (temppc & 0xFF00)) {
                 cycleCount++;
@@ -338,7 +310,6 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
     case BEQ:
         if (status & flags::Z) {
             cycleCount++;
-            // int8_t signedOffset = static_cast<int8_t>(operandAddress);
             temppc = pc + relAddr;
             if ((pc & 0xFF00) != (temppc & 0xFF00)) {
                 cycleCount++;
@@ -375,7 +346,6 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
     case BMI:
         if (status & flags::N) {
             cycleCount++;
-            // int8_t signedOffset = static_cast<int8_t>(operandAddress);
             temppc = pc + relAddr;
             if ((pc & 0xFF00) != (temppc & 0xFF00)) {
                 cycleCount++;
@@ -388,7 +358,6 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
     case BNE:
         if (!(status & flags::Z)) {
             cycleCount++;
-            // int8_t signedOffset = static_cast<int8_t>(operandAddress);
             temppc = pc + relAddr;
             if ((pc & 0xFF00) != (temppc & 0xFF00)) {
                 cycleCount++;
@@ -401,7 +370,6 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
     case BPL:
         if (!(status & (flags::N))) {
             cycleCount++;
-            // int8_t signedOffset = static_cast<int8_t>(operandAddress);
             temppc = pc + relAddr;
             if ((pc & 0xFF00) != (temppc & 0xFF00)) {
                 cycleCount++;
@@ -425,7 +393,6 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
     case BVC:
         if (!(status & flags::V)) {
             cycleCount++;
-            // int8_t signedOffset = static_cast<int8_t>(operandAddress);
             temppc = pc + relAddr;
             if ((pc & 0xFF00) != (temppc & 0xFF00)) {
                 cycleCount++;
@@ -438,7 +405,6 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
     case BVS:
         if (status & flags::V) {
             cycleCount++;
-            // int8_t signedOffset = static_cast<int8_t>(operandAddress);
             temppc = pc + relAddr;
             if ((pc & 0xFF00) != (temppc & 0xFF00)) {
                 cycleCount++;
@@ -549,7 +515,6 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
         fetchValue();
         operandValue -= 1;
         bus->storeTempValues(operandAddress, operandValue & 0x00FF, cycleCount);
-        // bus->writeBusCPU(operandAddress, operandValue);
         if ((operandValue & 0x00FF) == 0) {
             status |= flags::Z;
         }
@@ -626,7 +591,6 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
         fetchValue();
         operandValue = (operandValue + 1) & 0xFF;
         bus->storeTempValues(operandAddress, operandValue, cycleCount);
-        // bus->writeBusCPU(operandAddress, operandValue);
         if (operandValue == 0) {
             status |= flags::Z;
         }
@@ -776,7 +740,6 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
             status = (operandValue == 0) ? (status | flags::Z) : (status & ~flags::Z);
             status = (operandValue & 0x80) ? (status | flags::N) : (status & ~flags::N);
             bus->storeTempValues(operandAddress, operandValue & 0x00FF, cycleCount);
-            // bus->writeBusCPU(operandAddress, operandValue);
         }
         break;
 
@@ -858,7 +821,6 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
             status = (operandValue == 0) ? (status | flags::Z) : (status & ~flags::Z);
             status = (operandValue & 0x80) ? (status | flags::N) : (status & ~flags::N);
             bus->storeTempValues(operandAddress, operandValue, cycleCount);
-            // bus->writeBusCPU(operandAddress, operandValue);
         }
         break;
 
@@ -879,14 +841,12 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
             status = (operandValue == 0) ? (status | flags::Z) : (status & ~flags::Z);
             status = (operandValue & 0x80) ? (status | flags::N) : (status & ~flags::N);
             bus->storeTempValues(operandAddress, operandValue, cycleCount);
-            // bus->writeBusCPU(operandAddress, operandValue);
         }
         break;
 
         // Return from Interrupt
     case RTI:
         newStatusRTI = pop();
-        // newStatusRTI = (newStatusRTI & ~flags::B & ~flags::U) | (status & (flags::B | flags::U)); IDK if i need this line
         status = newStatusRTI;
         status &= ~flags::I;
         status &= ~flags::B;
@@ -922,18 +882,7 @@ void cpu::decodeAndExecute(byte instruction, int& cycleCount, AddressingModes ad
         a = ADCresult;
         status = (a == 0) ? (status | flags::Z) : (status & ~flags::Z);
         status = (a & 0x80) ? (status | flags::N) : (status & ~flags::N);
-        /*
-        effectiveValue = operandAddress + (status & flags::C ? 1 : 0);
-        difference = a - effectiveValue;
-        overflow = ((a ^ operandAddress) & 0x80) && ((a ^ difference) & 0x80);
 
-        status = (status & ~flags::V) | (overflow ? flags::V : 0);
-        status = (status & ~flags::C) | (difference <= 0xFF ? flags::C : 0);
-        status = ((difference & 0xFF) == 0) ? (status | flags::Z) : (status & ~flags::Z);
-        status = (difference & 0x80) ? (status | flags::N) : (status & ~flags::N);
-
-        a = difference & 0xFF;
-        */
         break;
 
         // Set Carry Flag
@@ -1041,6 +990,7 @@ long cpu::getCurrentTime() {
     return value.count(); // This returns the time in microseconds
 }
 
+// This is for parsing intel hex files for test cases
 void cpu::loadIntelHexFile(const std::string& filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -1067,11 +1017,6 @@ void cpu::loadIntelHexFile(const std::string& filename) {
             for (int i = 0; i < byteCount; ++i) {
                 uint8_t dataByte = std::stoi(line.substr(8 + i * 2, 2), nullptr, 16);
                 bus->writeBusCPU(address + i, dataByte);
-                /* if (pc2 < 500) { For testing to make sure my parser works
-                    std::cout << "Opcode: 0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned>(dataByte) << std::dec << std::endl;
-                    pc2++;
-                }
-                */
             }
         }
         else if (recordType == 0x01) {

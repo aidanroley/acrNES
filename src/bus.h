@@ -86,7 +86,7 @@ public:
     byte actualInputRegister;
     
     void updateControllerState(const Uint8* state) {
-        //inputRegister = 0;
+
         if (state[SDL_SCANCODE_RIGHT]) {
             inputRegister |= 0x01;
         }

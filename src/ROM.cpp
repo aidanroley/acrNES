@@ -104,24 +104,6 @@ int ROM::parseFile() {
 
 	std::cout << "Mapper Number: " << header.mapperNumber << std::endl;
 		loadMapper(header.mapperNumber);
-		romBus->check();
-
-	/*
-	std::cout << "PROGRAM ARRAY" << std::endl;
-	for (int element : header.PRGarray) {
-		std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(element) << " ";
-	}
-	std::cout << "CHR ARRAY" << std::endl;
-	for (int element : header.CHRarray) {
-		std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(element) << " ";
-	}
-
-	/* 
-	for (int element : byteArray) {
-		std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(element) << " ";
-	}
-	std::cout << std::endl;
-	*/
 		
 	file.close();
 	return 0;
