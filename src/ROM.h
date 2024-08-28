@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <cstdint>
 #include <vector>
+#include <string>
 
 
 class ROM {

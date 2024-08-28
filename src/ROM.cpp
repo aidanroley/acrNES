@@ -9,11 +9,12 @@ int ROM::parseFile() {
 	header.iNES = false;
 	header.NES2 = false;
 	std::vector<byte> byteArray;
-	const char* filename = "C:\\Users\\bridg\\Downloads\\Super Mario Bros (E)\\Super Mario Bros (E).nes";
-	//const char* filename = "C:\\Users\\bridg\\Downloads\\donkeykong.nes";
-	//const char* filename = "C:\\Users\\bridg\\Downloads\\nestest.nes";
-	//const char* filename = "C:\\Users\\bridg\\Downloads\\cpu_dummy_reads.nes";
-	// const char* filename = "C:\\Users\\bridg\\Downloads\\Battletoads (USA).nes";
+	std::string input;
+	std::cout << "Using this format -> C:\\Users\\bridg\\Downloads\\donkeykong.nes -> Please enter the path to the NES file: ";
+	std::getline(std::cin, input);
+
+	// Convert the user input to a const char*
+	const char* filename = input.c_str();
 	std::ifstream file(filename, std::ios::binary);
 	if (!file) {
 		std::cerr << "Cannot open file." << std::endl;
